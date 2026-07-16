@@ -17,6 +17,7 @@
     --accent-bg:#E4A030;
     --gold-ink:#8A5D12;
     --forest-soft:#5F7A66;
+    --sub-amount:#736F55;
     --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
     --mono:"SF Mono","Menlo","Consolas",monospace;
   }
@@ -66,6 +67,7 @@
   .row-count{font-size:12px;color:var(--ink-soft);margin:2px 0 0;}
   .row-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
   .row-amount{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14.5px;font-weight:600;color:var(--ink);}
+  .row-amount.sub-amount{color:var(--sub-amount);}
 
   .icon-btn{width:30px;height:30px;border-radius:8px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--ink-soft);}
   .icon-btn svg{width:15px;height:15px;}
@@ -120,9 +122,9 @@
   .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;margin-top:4px;max-height:70vh;}
   table.grid{border-collapse:separate;border-spacing:0;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap;}
   table.grid th, table.grid td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);}
-  table.grid thead th{font-family:var(--sans);font-weight:600;text-align:center;background:var(--paper);position:sticky;top:0;z-index:3;border-bottom:1px solid var(--line);}
+  table.grid thead th{font-family:var(--sans);font-weight:600;text-align:center;background:var(--paper);border-bottom:1px solid var(--line);}
   table.grid th.corner, table.grid td.month-cell{position:sticky;left:0;background:var(--bg);text-align:left;font-family:var(--sans);font-weight:600;z-index:2;border-right:1px solid var(--line);}
-  table.grid th.corner{z-index:5;background:var(--paper);}
+  table.grid th.corner{z-index:6;background:var(--paper);}
   table.grid tr.sum-row td{font-weight:700;color:var(--ink);background:var(--accent);}
   table.grid tr.sum-row td.month-cell{background:var(--accent);}
   .table-legend{font-size:12px;color:var(--ink-soft);margin:8px 2px 0;}
@@ -162,7 +164,8 @@ let state = {
   view: 'home',
   expandedAccounts: new Set(),
   expandedSubs: new Set(),
-  search: { from: '', to: '' }
+  search: { from: '', to: '' },
+  tableFilterYear: null
 };
 
 const STORAGE_KEY = 'ledger-accounts';
@@ -284,7 +287,7 @@ function renderHome(){
             const isSubOpen = state.expandedSubs.has(sub.id);
             html += '<div class="acc-row nested-1" onclick="toggleSub(\'' + sub.id + '\')">';
             html += '<div class="row-left"><span class="chev' + (isSubOpen ? ' open' : '') + '">' + ICONS.chev + '</span><div><p class="row-name">' + escapeHtml(sub.name) + '</p><p class="row-count">' + sub.entries.length + (sub.entries.length === 1 ? ' entry' : ' entries') + '</p></div></div>';
-            html += '<div class="row-right"><span class="row-amount">CHF ' + fmtCHF(subTotal(sub)) + '</span>';
+            html += '<div class="row-right"><span class="row-amount sub-amount">CHF ' + fmtCHF(subTotal(sub)) + '</span>';
             html += '<button class="icon-btn" onclick="event.stopPropagation();promptRenameSub(\'' + acc.id + '\',\'' + sub.id + '\')" aria-label="Rename subcategory">' + ICONS.edit + '</button>';
             html += '<button class="icon-btn danger" onclick="event.stopPropagation();promptDeleteSub(\'' + acc.id + '\',\'' + sub.id + '\')" aria-label="Delete subcategory">' + ICONS.trash + '</button>';
             html += '</div></div>';
@@ -599,6 +602,14 @@ function buildTableColumns(){
 }
 
 function openTableView(){ state.view = 'table'; render(); }
+function setTableYear(y){ state.tableFilterYear = y; render(); }
+function clearTableYear(){ state.tableFilterYear = null; render(); }
+
+function sumForColumn(col, monthKeys){
+  const set = new Set(monthKeys);
+  const list = col.sub ? col.sub.entries : col.acc.entries;
+  return list.filter(e => set.has(e.month)).reduce((s,e) => s + (Number(e.amount)||0), 0);
+}
 
 function renderTableView(){
   let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
@@ -611,40 +622,55 @@ function renderTableView(){
     return html;
   }
 
+  html += '<div class="ghost-row" style="margin-bottom:10px;">';
+  yearsAvailable().forEach(y => {
+    const active = state.tableFilterYear === y;
+    html += '<button class="ghost-btn" style="' + (active ? 'color:var(--accent-ink);font-weight:700;' : '') + '" onclick="setTableYear(' + y + ')">' + y + '</button>';
+  });
+  html += '<button class="ghost-btn" style="' + (!state.tableFilterYear ? 'color:var(--accent-ink);font-weight:700;' : '') + '" onclick="clearTableYear()">All time</button>';
+  html += '</div>';
+
+  let monthsToShow;
+  if(state.tableFilterYear){
+    monthsToShow = monthsBetween(state.tableFilterYear + '-01', state.tableFilterYear + '-12');
+  } else {
+    const { minM, maxM } = monthRange();
+    monthsToShow = (minM && maxM) ? monthsBetween(minM, maxM) : [];
+  }
+
+  const ROW_H = 36; // fixed row height (px) so sticky offsets stack predictably
+
   html += '<div class="table-wrap"><table class="grid"><thead>';
-  html += '<tr><th class="corner" rowspan="2">Date</th>';
+  html += '<tr><th class="corner" rowspan="2" style="position:sticky;top:0;left:0;z-index:6;height:' + (ROW_H*2) + 'px;">Date</th>';
   state.accounts.forEach((acc, i) => {
     const width = acc.subcategories.length > 0 ? acc.subcategories.length : 1;
     const bandColor = i % 2 === 0 ? 'var(--accent-ink)' : 'var(--forest-alt)';
-    html += '<th colspan="' + width + '" style="background:' + bandColor + ';color:#fff;">' + escapeHtml(acc.name) + '</th>';
+    html += '<th colspan="' + width + '" style="position:sticky;top:0;z-index:5;height:' + ROW_H + 'px;background:' + bandColor + ';color:#fff;">' + escapeHtml(acc.name) + '</th>';
   });
   html += '</tr><tr>';
   columns.forEach(col => {
     const accIdx = state.accounts.indexOf(col.acc);
     const bandColor = accIdx % 2 === 0 ? 'var(--accent-ink)' : 'var(--forest-alt)';
-    html += '<th style="background:' + bandColor + ';color:#fff;">' + escapeHtml(col.sub ? col.sub.name : '\u2014') + '</th>';
+    html += '<th style="position:sticky;top:' + ROW_H + 'px;z-index:5;height:' + ROW_H + 'px;background:' + bandColor + ';color:#fff;">' + escapeHtml(col.sub ? col.sub.name : '\u2014') + '</th>';
   });
   html += '</tr></thead><tbody>';
 
-  html += '<tr class="sum-row"><td class="month-cell">Total</td>';
+  html += '<tr class="sum-row"><td class="month-cell" style="position:sticky;top:' + (ROW_H*2) + 'px;left:0;z-index:5;">' + (state.tableFilterYear ? state.tableFilterYear + ' total' : 'Total') + '</td>';
   columns.forEach(col => {
-    const t = col.sub ? subTotal(col.sub) : accTotal(col.acc);
-    html += '<td>' + fmtCHF(t) + '</td>';
+    const t = sumForColumn(col, monthsToShow);
+    html += '<td style="position:sticky;top:' + (ROW_H*2) + 'px;z-index:4;">' + fmtCHF(t) + '</td>';
   });
   html += '</tr>';
 
-  const { minM, maxM } = monthRange();
-  if(minM && maxM){
-    monthsBetween(minM, maxM).forEach(monthKey => {
-      html += '<tr><td class="month-cell">' + fmtMonth(monthKey) + '</td>';
-      columns.forEach(col => {
-        const list = col.sub ? col.sub.entries : col.acc.entries;
-        const sum = list.filter(e => e.month === monthKey).reduce((s,e) => s + (Number(e.amount)||0), 0);
-        html += '<td>' + fmtCHF(sum) + '</td>';
-      });
-      html += '</tr>';
+  monthsToShow.forEach(monthKey => {
+    html += '<tr><td class="month-cell">' + fmtMonth(monthKey) + '</td>';
+    columns.forEach(col => {
+      const list = col.sub ? col.sub.entries : col.acc.entries;
+      const sum = list.filter(e => e.month === monthKey).reduce((s,e) => s + (Number(e.amount)||0), 0);
+      html += '<td>' + fmtCHF(sum) + '</td>';
     });
-  }
+    html += '</tr>';
+  });
 
   html += '</tbody></table></div>';
   html += '<p class="table-legend">All amounts in CHF. Scroll to see every account and month.</p>';
