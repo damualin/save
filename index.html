@@ -1,0 +1,1100 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sparkonto">
+<style>
+  :root{
+    --bg:#FFF9EC;
+    --paper:#FFFFFF;
+    --ink:#000004;
+    --ink-soft:#7D7565;
+    --line:#EAD9BE;
+    --accent:#93A868;
+    --accent-text:#5D6D3D;
+    --accent-ink:#1D402D;
+    --forest-alt:#2F5943;
+    --accent-bg:#E4A030;
+    --gold-ink:#8A5D12;
+    --forest-soft:#5F7A66;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","Menlo","Consolas",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);}
+  body{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:48px;-webkit-font-smoothing:antialiased;}
+  button, input, select{font-family:inherit;}
+
+  header.top{padding:24px 20px 16px;position:sticky;top:0;background:var(--bg);z-index:6;}
+  .eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-ink);font-weight:600;margin:0 0 6px;}
+  .grand-total{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:36px;font-weight:600;letter-spacing:-0.02em;line-height:1.05;color:var(--accent-ink);}
+  .grand-total small{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink-soft);margin-right:6px;}
+
+  .primary-cta{
+    width:100%;margin-top:16px;padding:14px;border-radius:12px;border:none;
+    background:var(--accent-ink);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .primary-cta:active{opacity:.9;}
+  .primary-cta svg{width:17px;height:17px;}
+
+  .ghost-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .ghost-btn{
+    display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--forest-soft);
+    font-size:12.5px;font-weight:600;cursor:pointer;padding:6px 2px;
+  }
+  .ghost-btn svg{width:14px;height:14px;}
+  .ghost-btn:active{color:var(--accent-ink);}
+
+  main{padding:4px 20px 8px;}
+
+  .nav-row{display:flex;align-items:center;gap:10px;padding:18px 20px 4px;}
+  .back-btn{display:flex;align-items:center;gap:4px;background:none;border:none;color:var(--accent-ink);font-size:15px;font-weight:600;padding:6px 4px 6px 0;cursor:pointer;}
+  .back-btn svg{width:16px;height:16px;}
+  .page-title{font-size:21px;font-weight:600;letter-spacing:-.01em;margin:2px 20px 14px;}
+
+  .acc-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:15px 0;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .acc-row.nested-1{padding-left:20px;border-left:2px solid var(--line);margin-left:2px;}
+  .acc-row.nested-2{padding-left:40px;border-left:2px solid var(--line);margin-left:2px;}
+  .row-left{min-width:0;display:flex;align-items:center;gap:8px;}
+  .chev{width:14px;height:14px;color:var(--ink-soft);flex-shrink:0;transition:transform .15s ease;}
+  .chev.open{transform:rotate(90deg);}
+  .row-name{font-size:15.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent-text);}
+  .row-count{font-size:12px;color:var(--ink-soft);margin:2px 0 0;}
+  .row-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+  .row-amount{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14.5px;font-weight:600;color:var(--ink);}
+
+  .icon-btn{width:30px;height:30px;border-radius:8px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--ink-soft);}
+  .icon-btn svg{width:15px;height:15px;}
+  .icon-btn:active{background:var(--accent-bg);color:var(--accent-ink);}
+  .icon-btn.danger:active{color:var(--accent-ink);}
+
+  .add-btn{
+    width:100%;padding:12px;border-radius:10px;border:1px dashed var(--line);background:none;
+    color:var(--forest-soft);font-size:14px;font-weight:600;cursor:pointer;margin:8px 0 4px;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .add-btn.nested-1{margin-left:22px;width:calc(100% - 22px);}
+  .add-btn.nested-2{margin-left:42px;width:calc(100% - 42px);}
+  .add-btn:active{background:var(--accent-bg);}
+  .add-btn svg{width:14px;height:14px;}
+
+  .entries-block{padding:2px 0 10px;}
+  .entries-block.nested-1{padding-left:20px;border-left:2px solid var(--line);margin-left:2px;}
+  .entries-block.nested-2{padding-left:40px;border-left:2px solid var(--line);margin-left:2px;}
+  .entry-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .entry-left{min-width:0;}
+  .entry-month{font-size:14px;font-weight:600;margin:0 0 1px;}
+  .entry-note{font-size:12px;color:var(--ink-soft);margin:0;word-break:break-word;}
+  .entry-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+  .entry-amount{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;white-space:nowrap;}
+
+  .empty{text-align:center;padding:36px 20px;color:var(--ink-soft);}
+  .empty p:first-child{font-size:14.5px;font-weight:600;color:var(--ink);margin:0 0 5px;}
+  .empty p{font-size:13px;margin:0;line-height:1.5;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(43,38,32,.42);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--paper);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;}
+  .modal-title{font-size:17px;font-weight:600;margin:0 0 14px;}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field input, .field select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:9px;font-size:15.5px;background:var(--bg);color:var(--ink);}
+  .field input:focus, .field select:focus{outline:2px solid var(--accent-text);outline-offset:-1px;}
+  .modal-actions{display:flex;gap:10px;margin-top:16px;}
+  .btn{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line);font-size:14.5px;font-weight:600;cursor:pointer;background:var(--paper);color:var(--ink);}
+  .btn.primary{background:var(--accent-text);border-color:var(--accent-text);color:#fff;}
+  .btn.danger{background:var(--accent-ink);border-color:var(--accent-ink);color:#fff;}
+  .btn:active{opacity:.85;}
+  .modal-warn{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 4px;}
+  .section-head{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent-ink);margin:16px 0 8px;padding-top:10px;border-top:1px solid var(--line);}
+  .section-head.first{margin-top:4px;padding-top:0;border-top:none;}
+  .bulk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .month-year-row{display:flex;gap:10px;}
+  .month-year-row .field{flex:1;margin-bottom:0;}
+
+  .table-wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;margin-top:4px;max-height:70vh;}
+  table.grid{border-collapse:separate;border-spacing:0;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap;}
+  table.grid th, table.grid td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);}
+  table.grid thead th{font-family:var(--sans);font-weight:600;text-align:center;background:var(--paper);position:sticky;top:0;z-index:3;border-bottom:1px solid var(--line);}
+  table.grid th.corner, table.grid td.month-cell{position:sticky;left:0;background:var(--bg);text-align:left;font-family:var(--sans);font-weight:600;z-index:2;border-right:1px solid var(--line);}
+  table.grid th.corner{z-index:5;background:var(--paper);}
+  table.grid tr.sum-row td{font-weight:700;color:var(--ink);background:var(--accent);}
+  table.grid tr.sum-row td.month-cell{background:var(--accent);}
+  .table-legend{font-size:12px;color:var(--ink-soft);margin:8px 2px 0;}
+
+  .fade{animation:fadeIn .16s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+
+<div id="app"><div style="padding:70px 28px;text-align:center;font-family:-apple-system,'Helvetica Neue',sans-serif;">
+  <p style="font-weight:700;font-size:16px;color:#1B1B18;margin:0 0 10px;">This needs Safari, not the file preview</p>
+  <p style="font-size:14px;line-height:1.6;color:#65635C;margin:0;">Tap the <strong>Share</strong> icon above, then choose <strong>Open in Safari</strong> to load the app.</p>
+</div></div>
+<input type="file" id="importFileInput" accept=".csv,text/csv" style="display:none" onchange="handleImportFile(event)">
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+const ICONS = {
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>'
+};
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+let state = {
+  accounts: [],
+  view: 'home',
+  expandedAccounts: new Set(),
+  expandedSubs: new Set(),
+  search: { from: '', to: '' }
+};
+
+const STORAGE_KEY = 'ledger-accounts';
+let uidCounter = 0;
+function uid(){ uidCounter += 1; return 'id' + Date.now().toString(36) + uidCounter.toString(36); }
+
+function defaultData(){
+  const mkSub = (name) => ({ id: uid(), name, entries: [] });
+  return [
+    { id: uid(), name: 'Holidays', subcategories: [mkSub('FixedPhD'), mkSub('VariablePhD'), mkSub('AfterPhD')], entries: [] },
+    { id: uid(), name: 'PostPhD', subcategories: [mkSub('Health'), mkSub('Tech'), mkSub('Extras'), mkSub('Extras2'), mkSub('Extras3'), mkSub('Matricula')], entries: [] },
+    { id: uid(), name: 'Savings', subcategories: [mkSub('All'), mkSub('Papa'), mkSub('Scholarship')], entries: [] },
+    { id: uid(), name: 'Babi', subcategories: [], entries: [] }
+  ];
+}
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      state.accounts = JSON.parse(raw);
+      return;
+    }
+  }catch(e){}
+  state.accounts = defaultData();
+  saveData();
+}
+
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.accounts));
+  }catch(e){
+    console.error('save failed', e);
+    openModal('<p class="modal-title">Couldn\u2019t save</p><p class="modal-warn">Your device blocked local storage for this page (this can happen in private browsing). Your changes may not be kept after closing.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+  }
+}
+
+function fmtCHF(n){
+  const num = Number(n) || 0;
+  const formatted = new Intl.NumberFormat('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(num));
+  return (num < 0 ? '\u2212' : '') + formatted;
+}
+function fmtMonth(ym){
+  if(!ym) return '';
+  const [y,m] = ym.split('-');
+  return MONTH_ABBR[parseInt(m,10)-1] + ' ' + y;
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+function getAccount(id){ return state.accounts.find(a => a.id === id); }
+function getSub(acc, id){ return acc.subcategories.find(s => s.id === id); }
+function subTotal(sub){ return sub.entries.reduce((s,e) => s + (Number(e.amount)||0), 0); }
+function accTotal(acc){
+  if(acc.subcategories.length > 0) return acc.subcategories.reduce((s,sc) => s + subTotal(sc), 0);
+  return acc.entries.reduce((s,e) => s + (Number(e.amount)||0), 0);
+}
+function grandTotal(){ return state.accounts.reduce((s,a) => s + accTotal(a), 0); }
+function accEntryCount(acc){
+  if(acc.subcategories.length > 0) return acc.subcategories.reduce((s,sc) => s + sc.entries.length, 0);
+  return acc.entries.length;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  if(state.view === 'home') app.innerHTML = renderHome();
+  else if(state.view === 'table') app.innerHTML = renderTableView();
+  else if(state.view === 'search') app.innerHTML = renderSearchView();
+  app.classList.remove('fade'); void app.offsetWidth; app.classList.add('fade');
+}
+function goHome(){ state.view = 'home'; render(); }
+
+function toggleAccount(id){
+  if(state.expandedAccounts.has(id)) state.expandedAccounts.delete(id);
+  else state.expandedAccounts.add(id);
+  render();
+}
+function toggleSub(id){
+  if(state.expandedSubs.has(id)) state.expandedSubs.delete(id);
+  else state.expandedSubs.add(id);
+  render();
+}
+
+function renderHome(){
+  let html = '<header class="top">';
+  html += '<p class="eyebrow">Sparkonten \u00b7 savings ledger</p>';
+  html += '<div class="grand-total"><small>CHF</small>' + fmtCHF(grandTotal()) + '</div>';
+  html += '<button class="primary-cta" onclick="promptBulkEntry()">' + ICONS.plus + ' Add monthly entry</button>';
+  html += '<div class="ghost-row">';
+  html += '<button class="ghost-btn" onclick="openTableView()">' + ICONS.grid + ' Table view</button>';
+  html += '<button class="ghost-btn" onclick="openSearch()">' + ICONS.search + ' Search by date</button>';
+  html += '<button class="ghost-btn" onclick="document.getElementById(\'importFileInput\').click()">' + ICONS.upload + ' Import CSV</button>';
+  html += '<button class="ghost-btn" onclick="exportCSV()">' + ICONS.download + ' Export CSV</button>';
+  html += '</div>';
+  html += '</header><main>';
+
+  if(state.accounts.length === 0){
+    html += '<div class="empty"><p>No accounts yet</p><p>Add your first savings account to start the ledger.</p></div>';
+  } else {
+    state.accounts.forEach(acc => {
+      const isOpen = state.expandedAccounts.has(acc.id);
+      const count = accEntryCount(acc);
+      const subLabel = acc.subcategories.length > 0
+        ? acc.subcategories.length + (acc.subcategories.length === 1 ? ' subcategory' : ' subcategories')
+        : (count + (count === 1 ? ' entry' : ' entries'));
+      html += '<div class="acc-row" onclick="toggleAccount(\'' + acc.id + '\')">';
+      html += '<div class="row-left"><span class="chev' + (isOpen ? ' open' : '') + '">' + ICONS.chev + '</span><div><p class="row-name">' + escapeHtml(acc.name) + '</p><p class="row-count">' + subLabel + '</p></div></div>';
+      html += '<div class="row-right"><span class="row-amount">CHF ' + fmtCHF(accTotal(acc)) + '</span>';
+      html += '<button class="icon-btn" onclick="event.stopPropagation();promptRenameAccount(\'' + acc.id + '\')" aria-label="Rename account">' + ICONS.edit + '</button>';
+      html += '<button class="icon-btn danger" onclick="event.stopPropagation();promptDeleteAccount(\'' + acc.id + '\')" aria-label="Delete account">' + ICONS.trash + '</button>';
+      html += '</div></div>';
+
+      if(isOpen){
+        if(acc.subcategories.length > 0){
+          acc.subcategories.forEach(sub => {
+            const isSubOpen = state.expandedSubs.has(sub.id);
+            html += '<div class="acc-row nested-1" onclick="toggleSub(\'' + sub.id + '\')">';
+            html += '<div class="row-left"><span class="chev' + (isSubOpen ? ' open' : '') + '">' + ICONS.chev + '</span><div><p class="row-name">' + escapeHtml(sub.name) + '</p><p class="row-count">' + sub.entries.length + (sub.entries.length === 1 ? ' entry' : ' entries') + '</p></div></div>';
+            html += '<div class="row-right"><span class="row-amount">CHF ' + fmtCHF(subTotal(sub)) + '</span>';
+            html += '<button class="icon-btn" onclick="event.stopPropagation();promptRenameSub(\'' + acc.id + '\',\'' + sub.id + '\')" aria-label="Rename subcategory">' + ICONS.edit + '</button>';
+            html += '<button class="icon-btn danger" onclick="event.stopPropagation();promptDeleteSub(\'' + acc.id + '\',\'' + sub.id + '\')" aria-label="Delete subcategory">' + ICONS.trash + '</button>';
+            html += '</div></div>';
+            if(isSubOpen){
+              html += '<div class="entries-block nested-2">';
+              html += renderEntriesList(sub.entries, acc.id, sub.id);
+              html += '</div>';
+              html += '<button class="add-btn nested-1" onclick="promptAddEntry(\'' + acc.id + '\',\'' + sub.id + '\')">' + ICONS.plus + ' Add entry</button>';
+            }
+          });
+          html += '<button class="add-btn nested-1" onclick="promptAddSub(\'' + acc.id + '\')">' + ICONS.plus + ' Add subcategory</button>';
+        } else {
+          html += '<div class="entries-block nested-1">';
+          html += renderEntriesList(acc.entries, acc.id, null);
+          html += '</div>';
+          html += '<button class="add-btn nested-1" onclick="promptAddEntry(\'' + acc.id + '\', null)">' + ICONS.plus + ' Add entry</button>';
+          html += '<button class="add-btn nested-1" onclick="promptAddSub(\'' + acc.id + '\')">' + ICONS.plus + ' Add subcategory</button>';
+        }
+      }
+    });
+  }
+
+  html += '<button class="add-btn" onclick="promptAddAccount()">' + ICONS.plus + ' Add account</button>';
+  html += '<p style="font-size:11.5px;color:var(--ink-soft);margin:14px 2px 0;line-height:1.5;">Stored only on this device. Export a CSV backup now and then.</p>';
+  html += '</main>';
+  return html;
+}
+
+function renderEntriesList(entries, accId, subId){
+  if(entries.length === 0){
+    return '<div class="empty"><p>No entries yet</p><p>Add your first monthly statement below.</p></div>';
+  }
+  const sorted = [...entries].sort((a,b) => b.month.localeCompare(a.month));
+  let html = '';
+  sorted.forEach(e => {
+    html += '<div class="entry-row">';
+    html += '<div class="entry-left"><p class="entry-month">' + fmtMonth(e.month) + '</p>';
+    if(e.note) html += '<p class="entry-note">' + escapeHtml(e.note) + '</p>';
+    html += '</div>';
+    html += '<div class="entry-right"><span class="entry-amount">CHF ' + fmtCHF(e.amount) + '</span>';
+    html += '<button class="icon-btn" onclick="promptEditEntry(\'' + accId + '\', ' + (subId ? '\'' + subId + '\'' : 'null') + ', \'' + e.id + '\')" aria-label="Edit entry">' + ICONS.edit + '</button>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function openModal(html){
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalBody').innerHTML = '';
+}
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'modalOverlay') closeModal();
+});
+
+function promptAddAccount(){
+  openModal(
+    '<p class="modal-title">Add account</p>' +
+    '<div class="field"><label>Account name</label><input id="mAccName" type="text" placeholder="e.g. Travel" autofocus></div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitAddAccount()">Add</button></div>'
+  );
+}
+async function submitAddAccount(){
+  const name = document.getElementById('mAccName').value.trim();
+  if(!name) return;
+  state.accounts.push({ id: uid(), name, subcategories: [], entries: [] });
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptRenameAccount(accId){
+  const acc = getAccount(accId);
+  openModal(
+    '<p class="modal-title">Rename account</p>' +
+    '<div class="field"><label>Account name</label><input id="mAccName" type="text" value="' + escapeHtml(acc.name) + '" autofocus></div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitRenameAccount(\'' + accId + '\')">Save</button></div>'
+  );
+}
+async function submitRenameAccount(accId){
+  const name = document.getElementById('mAccName').value.trim();
+  if(!name) return;
+  getAccount(accId).name = name;
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptDeleteAccount(accId){
+  const acc = getAccount(accId);
+  const count = accEntryCount(acc);
+  openModal(
+    '<p class="modal-title">Delete ' + escapeHtml(acc.name) + '?</p>' +
+    '<p class="modal-warn">This removes the account' + (acc.subcategories.length ? ', all ' + acc.subcategories.length + ' subcategories,' : '') + ' and ' + count + ' ' + (count === 1 ? 'entry' : 'entries') + '. This cannot be undone.</p>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="submitDeleteAccount(\'' + accId + '\')">Delete</button></div>'
+  );
+}
+async function submitDeleteAccount(accId){
+  state.accounts = state.accounts.filter(a => a.id !== accId);
+  state.expandedAccounts.delete(accId);
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptAddSub(accId){
+  const acc = getAccount(accId);
+  openModal(
+    '<p class="modal-title">Add subcategory to ' + escapeHtml(acc.name) + '</p>' +
+    (acc.entries.length > 0 && acc.subcategories.length === 0
+      ? '<p class="modal-warn">The ' + acc.entries.length + ' existing ' + (acc.entries.length === 1 ? 'entry' : 'entries') + ' in this account will move into a new "General" subcategory.</p>'
+      : '') +
+    '<div class="field"><label>Subcategory name</label><input id="mSubName" type="text" placeholder="e.g. Extras4" autofocus></div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitAddSub(\'' + accId + '\')">Add</button></div>'
+  );
+}
+async function submitAddSub(accId){
+  const name = document.getElementById('mSubName').value.trim();
+  if(!name) return;
+  const acc = getAccount(accId);
+  if(acc.subcategories.length === 0 && acc.entries.length > 0){
+    acc.subcategories.push({ id: uid(), name: 'General', entries: acc.entries });
+    acc.entries = [];
+  }
+  acc.subcategories.push({ id: uid(), name, entries: [] });
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptRenameSub(accId, subId){
+  const acc = getAccount(accId);
+  const sub = getSub(acc, subId);
+  openModal(
+    '<p class="modal-title">Rename subcategory</p>' +
+    '<div class="field"><label>Subcategory name</label><input id="mSubName" type="text" value="' + escapeHtml(sub.name) + '" autofocus></div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitRenameSub(\'' + accId + '\',\'' + subId + '\')">Save</button></div>'
+  );
+}
+async function submitRenameSub(accId, subId){
+  const name = document.getElementById('mSubName').value.trim();
+  if(!name) return;
+  const acc = getAccount(accId);
+  getSub(acc, subId).name = name;
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptDeleteSub(accId, subId){
+  const acc = getAccount(accId);
+  const sub = getSub(acc, subId);
+  openModal(
+    '<p class="modal-title">Delete ' + escapeHtml(sub.name) + '?</p>' +
+    '<p class="modal-warn">This removes the subcategory and ' + sub.entries.length + ' ' + (sub.entries.length === 1 ? 'entry' : 'entries') + '. This cannot be undone.</p>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="submitDeleteSub(\'' + accId + '\',\'' + subId + '\')">Delete</button></div>'
+  );
+}
+async function submitDeleteSub(accId, subId){
+  const acc = getAccount(accId);
+  acc.subcategories = acc.subcategories.filter(s => s.id !== subId);
+  state.expandedSubs.delete(subId);
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptAddEntry(accId, subId){
+  const now = new Date();
+  const defaultMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  openModal(
+    '<p class="modal-title">Add entry</p>' +
+    '<div class="field"><label>Month</label><input id="mMonth" type="month" value="' + defaultMonth + '" min="2015-01" max="2035-12"></div>' +
+    '<div class="field"><label>Amount (CHF)</label><input id="mAmount" type="number" step="0.01" placeholder="0.00" inputmode="decimal"></div>' +
+    '<div class="field"><label>Note (optional)</label><input id="mNote" type="text" placeholder="e.g. year-end bonus"></div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitAddEntry(\'' + accId + '\', ' + (subId ? '\'' + subId + '\'' : 'null') + ')">Add</button></div>'
+  );
+}
+async function submitAddEntry(accId, subId){
+  const month = document.getElementById('mMonth').value;
+  const amount = parseFloat(document.getElementById('mAmount').value);
+  const note = document.getElementById('mNote').value.trim();
+  if(!month || isNaN(amount)) return;
+  const acc = getAccount(accId);
+  const target = subId ? getSub(acc, subId) : acc;
+  target.entries.push({ id: uid(), month, amount, note });
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptEditEntry(accId, subId, entryId){
+  const acc = getAccount(accId);
+  const target = subId ? getSub(acc, subId) : acc;
+  const entry = target.entries.find(e => e.id === entryId);
+  openModal(
+    '<p class="modal-title">Edit entry</p>' +
+    '<div class="field"><label>Month</label><input id="mMonth" type="month" value="' + entry.month + '" min="2015-01" max="2035-12"></div>' +
+    '<div class="field"><label>Amount (CHF)</label><input id="mAmount" type="number" step="0.01" value="' + entry.amount + '" inputmode="decimal"></div>' +
+    '<div class="field"><label>Note (optional)</label><input id="mNote" type="text" value="' + escapeHtml(entry.note || '') + '"></div>' +
+    '<div class="modal-actions"><button class="btn danger" style="flex:0 0 auto;width:44px;padding:12px 0;" onclick="submitDeleteEntry(\'' + accId + '\', ' + (subId ? '\'' + subId + '\'' : 'null') + ', \'' + entryId + '\')" aria-label="Delete entry">' + ICONS.trash + '</button><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitEditEntry(\'' + accId + '\', ' + (subId ? '\'' + subId + '\'' : 'null') + ', \'' + entryId + '\')">Save</button></div>'
+  );
+}
+async function submitEditEntry(accId, subId, entryId){
+  const month = document.getElementById('mMonth').value;
+  const amount = parseFloat(document.getElementById('mAmount').value);
+  const note = document.getElementById('mNote').value.trim();
+  if(!month || isNaN(amount)) return;
+  const acc = getAccount(accId);
+  const target = subId ? getSub(acc, subId) : acc;
+  const entry = target.entries.find(e => e.id === entryId);
+  entry.month = month; entry.amount = amount; entry.note = note;
+  await saveData();
+  closeModal();
+  render();
+}
+async function submitDeleteEntry(accId, subId, entryId){
+  const acc = getAccount(accId);
+  const target = subId ? getSub(acc, subId) : acc;
+  target.entries = target.entries.filter(e => e.id !== entryId);
+  await saveData();
+  closeModal();
+  render();
+}
+
+function bulkFieldId(acc, sub){ return 'bulk_' + (sub ? sub.id : acc.id); }
+
+function renderBulkFields(monthKey){
+  let html = '';
+  state.accounts.forEach((acc, idx) => {
+    html += '<p class="section-head' + (idx === 0 ? ' first' : '') + '">' + escapeHtml(acc.name) + '</p>';
+    if(acc.subcategories.length > 0){
+      html += '<div class="bulk-grid">';
+      acc.subcategories.forEach(sub => {
+        const existing = sub.entries.find(e => e.month === monthKey);
+        html += '<div class="field"><label>' + escapeHtml(sub.name) + '</label><input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, sub) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '"></div>';
+      });
+      html += '</div>';
+    } else {
+      const existing = acc.entries.find(e => e.month === monthKey);
+      html += '<div class="field"><input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, null) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '"></div>';
+    }
+  });
+  return html;
+}
+
+function promptBulkEntry(){
+  const now = new Date();
+  const monthKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  openModal(
+    '<p class="modal-title">Add monthly entry</p>' +
+    '<p class="modal-warn">Leave a field blank to skip it. Fields already have a value if that month was recorded before.</p>' +
+    '<div class="month-year-row">' +
+      '<div class="field"><label>Month</label><select id="bulkMonth" onchange="refreshBulkFields()">' + MONTH_NAMES.map((m,i) => '<option value="' + (i+1) + '"' + (i+1 === now.getMonth()+1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Year</label><input id="bulkYear" type="number" value="' + now.getFullYear() + '" min="2015" max="2035" onchange="refreshBulkFields()"></div>' +
+    '</div>' +
+    '<div id="bulkFieldsWrap">' + renderBulkFields(monthKey) + '</div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitBulkEntry()">Save month</button></div>'
+  );
+}
+function refreshBulkFields(){
+  const m = document.getElementById('bulkMonth').value;
+  const y = document.getElementById('bulkYear').value;
+  if(!y) return;
+  const monthKey = y + '-' + String(parseInt(m,10)).padStart(2,'0');
+  document.getElementById('bulkFieldsWrap').innerHTML = renderBulkFields(monthKey);
+}
+async function submitBulkEntry(){
+  const m = document.getElementById('bulkMonth').value;
+  const y = document.getElementById('bulkYear').value;
+  if(!y) return;
+  const monthKey = y + '-' + String(parseInt(m,10)).padStart(2,'0');
+  let touched = 0;
+  state.accounts.forEach(acc => {
+    if(acc.subcategories.length > 0){
+      acc.subcategories.forEach(sub => {
+        const el = document.getElementById(bulkFieldId(acc, sub));
+        if(!el || el.value.trim() === '') return;
+        const amount = parseFloat(el.value);
+        if(isNaN(amount)) return;
+        const existing = sub.entries.find(e => e.month === monthKey);
+        if(existing) existing.amount = amount;
+        else sub.entries.push({ id: uid(), month: monthKey, amount, note: '' });
+        touched++;
+      });
+    } else {
+      const el = document.getElementById(bulkFieldId(acc, null));
+      if(!el || el.value.trim() === '') return;
+      const amount = parseFloat(el.value);
+      if(isNaN(amount)) return;
+      const existing = acc.entries.find(e => e.month === monthKey);
+      if(existing) existing.amount = amount;
+      else acc.entries.push({ id: uid(), month: monthKey, amount, note: '' });
+      touched++;
+    }
+  });
+  await saveData();
+  closeModal();
+  render();
+}
+
+function buildTableColumns(){
+  const columns = [];
+  state.accounts.forEach(acc => {
+    if(acc.subcategories.length > 0) acc.subcategories.forEach(sub => columns.push({ acc, sub }));
+    else columns.push({ acc, sub: null });
+  });
+  return columns;
+}
+
+function openTableView(){ state.view = 'table'; render(); }
+
+function renderTableView(){
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
+  html += '<div class="page-title">All accounts</div>';
+  html += '<main>';
+
+  const columns = buildTableColumns();
+  if(columns.length === 0){
+    html += '<div class="empty"><p>Nothing to show yet</p><p>Add an account first.</p></div></main>';
+    return html;
+  }
+
+  html += '<div class="table-wrap"><table class="grid"><thead>';
+  html += '<tr><th class="corner" rowspan="2">Date</th>';
+  state.accounts.forEach((acc, i) => {
+    const width = acc.subcategories.length > 0 ? acc.subcategories.length : 1;
+    const bandColor = i % 2 === 0 ? 'var(--accent-ink)' : 'var(--forest-alt)';
+    html += '<th colspan="' + width + '" style="background:' + bandColor + ';color:#fff;">' + escapeHtml(acc.name) + '</th>';
+  });
+  html += '</tr><tr>';
+  columns.forEach(col => {
+    const accIdx = state.accounts.indexOf(col.acc);
+    const bandColor = accIdx % 2 === 0 ? 'var(--accent-ink)' : 'var(--forest-alt)';
+    html += '<th style="background:' + bandColor + ';color:#fff;">' + escapeHtml(col.sub ? col.sub.name : '\u2014') + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  html += '<tr class="sum-row"><td class="month-cell">Total</td>';
+  columns.forEach(col => {
+    const t = col.sub ? subTotal(col.sub) : accTotal(col.acc);
+    html += '<td>' + fmtCHF(t) + '</td>';
+  });
+  html += '</tr>';
+
+  const { minM, maxM } = monthRange();
+  if(minM && maxM){
+    monthsBetween(minM, maxM).forEach(monthKey => {
+      html += '<tr><td class="month-cell">' + fmtMonth(monthKey) + '</td>';
+      columns.forEach(col => {
+        const list = col.sub ? col.sub.entries : col.acc.entries;
+        const sum = list.filter(e => e.month === monthKey).reduce((s,e) => s + (Number(e.amount)||0), 0);
+        html += '<td>' + fmtCHF(sum) + '</td>';
+      });
+      html += '</tr>';
+    });
+  }
+
+  html += '</tbody></table></div>';
+  html += '<p class="table-legend">All amounts in CHF. Scroll to see every account and month.</p>';
+  html += '</main>';
+  return html;
+}
+
+const MONTH_NAMES_FULL = MONTH_NAMES;
+function csvNum(n){
+  const num = Number(n) || 0;
+  const rounded = Math.round(num * 100) / 100;
+  return String(rounded);
+}
+function csvEscape(v){
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+function csvRow(cells){ return cells.map(csvEscape).join(','); }
+
+function monthRange(){
+  let minM = null, maxM = null;
+  state.accounts.forEach(acc => {
+    const lists = acc.subcategories.length > 0 ? acc.subcategories.map(s => s.entries) : [acc.entries];
+    lists.forEach(list => list.forEach(e => {
+      if(!minM || e.month < minM) minM = e.month;
+      if(!maxM || e.month > maxM) maxM = e.month;
+    }));
+  });
+  return { minM, maxM };
+}
+function monthsBetween(minM, maxM){
+  const months = [];
+  let [y,m] = minM.split('-').map(Number);
+  const [ey,em] = maxM.split('-').map(Number);
+  while(y < ey || (y === ey && m <= em)){
+    months.push(y + '-' + String(m).padStart(2,'0'));
+    m++; if(m > 12){ m = 1; y++; }
+  }
+  return months;
+}
+
+function buildCSVText(){
+  const rows = [];
+  let row1 = ['Total', csvNum(grandTotal())];
+  state.accounts.forEach(acc => {
+    const width = acc.subcategories.length > 0 ? acc.subcategories.length : 1;
+    if(width === 1){
+      row1.push(acc.name);
+    } else {
+      row1.push(acc.name, csvNum(accTotal(acc)));
+      for(let i=0;i<width-2;i++) row1.push('');
+    }
+  });
+  rows.push(row1);
+
+  let row2 = ['', ''];
+  state.accounts.forEach(acc => {
+    if(acc.subcategories.length > 0) acc.subcategories.forEach(s => row2.push(s.name));
+    else row2.push('');
+  });
+  rows.push(row2);
+
+  let sumRow = ['SUM', ''];
+  state.accounts.forEach(acc => {
+    if(acc.subcategories.length > 0) acc.subcategories.forEach(s => sumRow.push(csvNum(subTotal(s))));
+    else sumRow.push(csvNum(accTotal(acc)));
+  });
+  rows.push(sumRow);
+
+  const { minM, maxM } = monthRange();
+  if(minM && maxM){
+    monthsBetween(minM, maxM).forEach(monthKey => {
+      const [y,m] = monthKey.split('-');
+      let row = [MONTH_NAMES[parseInt(m,10)-1], y];
+      state.accounts.forEach(acc => {
+        if(acc.subcategories.length > 0){
+          acc.subcategories.forEach(s => {
+            const sum = s.entries.filter(e => e.month === monthKey).reduce((t,e) => t + (Number(e.amount)||0), 0);
+            row.push(csvNum(sum));
+          });
+        } else {
+          const sum = acc.entries.filter(e => e.month === monthKey).reduce((t,e) => t + (Number(e.amount)||0), 0);
+          row.push(csvNum(sum));
+        }
+      });
+      rows.push(row);
+    });
+  }
+
+  return '\ufeff' + rows.map(csvRow).join('\r\n') + '\r\n';
+}
+
+function exportCSV(){
+  const csv = buildCSVText();
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'savings-ledger-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parseCSVLine(line){
+  const cells = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(line[i+1] === '"'){ cur += '"'; i++; } else inQuotes = false;
+      } else cur += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ cells.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  cells.push(cur);
+  return cells;
+}
+function parseCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  return text.split(/\r\n|\n|\r/).filter(l => l.length > 0).map(parseCSVLine);
+}
+
+function buildStructureFromRows(rows){
+  if(rows.length < 2) return { accounts: [], entries: [] };
+  const row1 = rows[0].slice();
+  const row2 = rows[1];
+  let sumRowIdx = rows.findIndex(r => (r[0]||'').trim().toUpperCase() === 'SUM');
+  const dataStart = sumRowIdx >= 0 ? sumRowIdx + 1 : 2;
+  const widestRow = rows.reduce((w,r) => Math.max(w, r.length), row1.length);
+  while(row1.length < widestRow) row1.push('');
+
+  const accounts = [];
+  const columns = [];
+  const looksNumeric = (s) => {
+    if(s === undefined || s === null) return false;
+    const t = String(s).trim();
+    return t !== '' && !isNaN(Number(t));
+  };
+  let col = 2;
+  while(col < row1.length){
+    const name = (row1[col]||'').trim();
+    if(!name){ col++; continue; }
+    let width = 1;
+    if(looksNumeric(row1[col+1])){
+      width = 2;
+      while(col+width < row1.length && !(row1[col+width]||'').trim()) width++;
+    }
+    if(width === 1){
+      accounts.push({ name, subNames: null });
+      columns.push({ accountName: name, subName: null });
+    } else {
+      const subNames = [];
+      for(let k=0;k<width;k++) subNames.push((row2[col+k]||'').trim());
+      accounts.push({ name, subNames });
+      subNames.forEach(sn => columns.push({ accountName: name, subName: sn }));
+    }
+    col += width;
+  }
+
+  const entries = [];
+  for(let r = dataStart; r < rows.length; r++){
+    const row = rows[r];
+    const monthLabel = (row[0]||'').trim();
+    const yearLabel = (row[1]||'').trim();
+    if(!monthLabel || !yearLabel) continue;
+    const mi = MONTH_NAMES.findIndex(m => m.toLowerCase() === monthLabel.toLowerCase());
+    if(mi === -1) continue;
+    const year = parseInt(yearLabel,10);
+    if(isNaN(year)) continue;
+    const monthKey = year + '-' + String(mi+1).padStart(2,'0');
+    columns.forEach((colDef, idx) => {
+      const cell = row[2+idx];
+      if(cell === undefined || cell.trim() === '') return;
+      const num = parseFloat(cell);
+      if(isNaN(num)) return;
+      entries.push({ accountName: colDef.accountName, subName: colDef.subName, month: monthKey, amount: num });
+    });
+  }
+
+  return { accounts, entries };
+}
+
+let pendingImport = null;
+
+function handleImportFile(event){
+  const file = event.target.files[0];
+  event.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let parsed;
+    try{
+      const rows = parseCSV(e.target.result);
+      parsed = buildStructureFromRows(rows);
+    }catch(err){
+      openModal('<p class="modal-title">Import failed</p><p class="modal-warn">The file couldn\u2019t be read. Make sure it\u2019s a CSV exported from this app.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+      return;
+    }
+    if(!parsed.accounts.length){
+      openModal('<p class="modal-title">Couldn\u2019t read this file</p><p class="modal-warn">This doesn\u2019t look like a savings ledger CSV. Make sure it matches the exported format.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+      return;
+    }
+    pendingImport = parsed;
+    showImportChoice(parsed);
+  };
+  reader.readAsText(file);
+}
+
+function showImportChoice(parsed){
+  openModal(
+    '<p class="modal-title">Import CSV</p>' +
+    '<p class="modal-warn">Found ' + parsed.entries.length + ' ' + (parsed.entries.length === 1 ? 'entry' : 'entries') + ' across ' + parsed.accounts.length + ' ' + (parsed.accounts.length === 1 ? 'account' : 'accounts') + '. How should this be added?</p>' +
+    '<div class="modal-actions" style="flex-direction:column;">' +
+      '<button class="btn primary" style="margin-bottom:10px;width:100%;" onclick="startMergeImport()">Combine with existing data</button>' +
+      '<button class="btn danger" style="margin-bottom:10px;width:100%;" onclick="confirmOverride()">Override existing data</button>' +
+      '<button class="btn" style="width:100%;" onclick="cancelImport()">Cancel</button>' +
+    '</div>'
+  );
+}
+function cancelImport(){ pendingImport = null; closeModal(); }
+
+function confirmOverride(){
+  openModal(
+    '<p class="modal-title">Are you sure you would like to override?</p>' +
+    '<p class="modal-warn">This replaces every account, subcategory, and entry currently in the app with what\u2019s in the file. This can\u2019t be undone.</p>' +
+    '<div class="modal-actions"><button class="btn" onclick="cancelImport()">Cancel</button><button class="btn danger" onclick="doOverrideImport()">Yes, override</button></div>'
+  );
+}
+async function doOverrideImport(){
+  const parsed = pendingImport;
+  if(!parsed) return;
+  const newAccounts = parsed.accounts.map(a => {
+    const subcategories = a.subNames ? a.subNames.map(sn => ({ id: uid(), name: sn, entries: [] })) : [];
+    return { id: uid(), name: a.name, subcategories, entries: [] };
+  });
+  parsed.entries.forEach(e => {
+    const acc = newAccounts.find(a => a.name === e.accountName);
+    if(!acc) return;
+    const target = e.subName ? acc.subcategories.find(s => s.name === e.subName) : acc;
+    if(target) target.entries.push({ id: uid(), month: e.month, amount: e.amount, note: '' });
+  });
+  state.accounts = newAccounts;
+  state.expandedAccounts = new Set();
+  state.expandedSubs = new Set();
+  pendingImport = null;
+  await saveData();
+  closeModal();
+  goHome();
+}
+
+function validateMatch(csvAccounts){
+  const appNames = state.accounts.map(a => a.name);
+  const csvNames = csvAccounts.map(a => a.name);
+  const appNameSet = new Set(appNames);
+  const csvNameSet = new Set(csvNames);
+  const accountsMatch = appNameSet.size === csvNameSet.size && appNames.every(n => csvNameSet.has(n));
+
+  const subMismatches = [];
+  csvAccounts.forEach(ca => {
+    const appAcc = state.accounts.find(a => a.name === ca.name);
+    if(!appAcc) return;
+    const appSubs = appAcc.subcategories.map(s => s.name);
+    const csvSubs = ca.subNames || [];
+    const appSubSet = new Set(appSubs);
+    const csvSubSet = new Set(csvSubs);
+    const match = appSubSet.size === csvSubSet.size && appSubs.every(n => csvSubSet.has(n));
+    if(!match) subMismatches.push({ account: ca.name, appSubs, csvSubs });
+  });
+
+  return { accountsMatch, subcategoriesMatch: subMismatches.length === 0, subMismatches, appNames, csvNames };
+}
+
+function startMergeImport(){
+  const parsed = pendingImport;
+  if(!parsed) return;
+  const validation = validateMatch(parsed.accounts);
+  if(!validation.accountsMatch || !validation.subcategoriesMatch){
+    showMismatchModal(validation);
+    return;
+  }
+  doMergeImport(parsed);
+}
+
+async function doMergeImport(parsed){
+  let added = 0, skipped = 0;
+  parsed.entries.forEach(e => {
+    const acc = state.accounts.find(a => a.name === e.accountName);
+    if(!acc) return;
+    const target = e.subName ? acc.subcategories.find(s => s.name === e.subName) : acc;
+    if(!target) return;
+    const exists = target.entries.some(x => x.month === e.month);
+    if(exists){ skipped++; return; }
+    target.entries.push({ id: uid(), month: e.month, amount: e.amount, note: '' });
+    added++;
+  });
+  pendingImport = null;
+  await saveData();
+  goHome();
+  openModal(
+    '<p class="modal-title">Import complete</p>' +
+    '<p class="modal-warn">Added ' + added + ' new ' + (added === 1 ? 'entry' : 'entries') + '.' + (skipped ? ' Skipped ' + skipped + ' that already had a value for that month.' : '') + '</p>' +
+    '<div class="modal-actions"><button class="btn primary" onclick="closeModal()">Done</button></div>'
+  );
+}
+
+function showMismatchModal(validation){
+  const accMismatch = !validation.accountsMatch;
+  const subMismatch = !validation.subcategoriesMatch;
+  let label;
+  if(accMismatch && subMismatch) label = 'Savings and subcategory names do not match';
+  else if(accMismatch) label = 'Savings names do not match';
+  else label = 'Subcategory names do not match';
+
+  let details = '<div id="mismatchDetails" style="display:none;margin-top:10px;">';
+  if(accMismatch){
+    const appOnly = validation.appNames.filter(n => !validation.csvNames.includes(n));
+    const csvOnly = validation.csvNames.filter(n => !validation.appNames.includes(n));
+    if(appOnly.length) details += '<p class="modal-warn">In the app but not the file: ' + appOnly.map(escapeHtml).join(', ') + '</p>';
+    if(csvOnly.length) details += '<p class="modal-warn">In the file but not the app: ' + csvOnly.map(escapeHtml).join(', ') + '</p>';
+  }
+  validation.subMismatches.forEach(m => {
+    details += '<p class="modal-warn">' + escapeHtml(m.account) + ': app has ' + (m.appSubs.map(escapeHtml).join(', ') || '\u2014') + '; file has ' + (m.csvSubs.map(escapeHtml).join(', ') || '\u2014') + '</p>';
+  });
+  details += '</div>';
+
+  openModal(
+    '<p class="modal-title">' + label + '</p>' +
+    '<p class="modal-warn">Combining only works when account and subcategory names line up exactly. Rename them to match in the app or the file, or override instead.</p>' +
+    '<button class="ghost-btn" onclick="toggleMismatchDetails()">Show details</button>' +
+    details +
+    '<div class="modal-actions"><button class="btn" onclick="cancelImport()">Close</button><button class="btn danger" onclick="confirmOverride()">Override instead</button></div>'
+  );
+}
+function toggleMismatchDetails(){
+  const el = document.getElementById('mismatchDetails');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function openSearch(){
+  state.view = 'search';
+  if(!state.search.from){
+    const now = new Date();
+    state.search.from = now.getFullYear() + '-01';
+    state.search.to = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  }
+  render();
+}
+function updateSearch(){
+  state.search.from = document.getElementById('searchFrom').value;
+  state.search.to = document.getElementById('searchTo').value;
+  render();
+}
+function setSearchYear(y){
+  state.search.from = y + '-01';
+  state.search.to = y + '-12';
+  render();
+}
+function setSearchAll(){
+  state.search.from = '';
+  state.search.to = '';
+  render();
+}
+function yearsAvailable(){
+  const years = new Set();
+  years.add(new Date().getFullYear());
+  state.accounts.forEach(acc => {
+    const lists = acc.subcategories.length > 0 ? acc.subcategories.map(s => s.entries) : [acc.entries];
+    lists.forEach(list => list.forEach(e => years.add(parseInt(e.month.slice(0,4), 10))));
+  });
+  return Array.from(years).sort((a,b) => b - a);
+}
+function computeSearchResults(from, to){
+  const inRange = (m) => (!from || m >= from) && (!to || m <= to);
+  let total = 0;
+  const accounts = [];
+  state.accounts.forEach(acc => {
+    let accTotalR = 0;
+    const groups = [];
+    if(acc.subcategories.length > 0){
+      acc.subcategories.forEach(sub => {
+        const entries = sub.entries.filter(e => inRange(e.month)).sort((a,b) => b.month.localeCompare(a.month));
+        if(entries.length){
+          const t = entries.reduce((s,e) => s + (Number(e.amount)||0), 0);
+          groups.push({ name: sub.name, total: t, entries });
+          accTotalR += t;
+        }
+      });
+    } else {
+      const entries = acc.entries.filter(e => inRange(e.month)).sort((a,b) => b.month.localeCompare(a.month));
+      if(entries.length){
+        const t = entries.reduce((s,e) => s + (Number(e.amount)||0), 0);
+        groups.push({ name: '', total: t, entries });
+        accTotalR += t;
+      }
+    }
+    if(groups.length){
+      accounts.push({ name: acc.name, total: accTotalR, groups });
+      total += accTotalR;
+    }
+  });
+  return { total, accounts };
+}
+function renderSearchView(){
+  const from = state.search.from;
+  const to = state.search.to;
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
+  html += '<div class="page-title">Search history</div>';
+  html += '<main>';
+
+  html += '<div class="month-year-row" style="margin-bottom:12px;">';
+  html += '<div class="field"><label>From</label><input type="month" id="searchFrom" value="' + from + '" onchange="updateSearch()"></div>';
+  html += '<div class="field"><label>To</label><input type="month" id="searchTo" value="' + to + '" onchange="updateSearch()"></div>';
+  html += '</div>';
+  html += '<div class="ghost-row" style="margin-bottom:10px;">';
+  yearsAvailable().forEach(y => {
+    html += '<button class="ghost-btn" onclick="setSearchYear(' + y + ')">' + y + '</button>';
+  });
+  html += '<button class="ghost-btn" onclick="setSearchAll()">All time</button>';
+  html += '</div>';
+
+  const results = computeSearchResults(from, to);
+  html += '<p class="page-title" style="font-size:17px;margin:14px 2px;">CHF ' + fmtCHF(results.total) + ' in this range</p>';
+
+  if(results.accounts.length === 0){
+    html += '<div class="empty"><p>No entries in this range</p><p>Try widening the dates or pick a different year above.</p></div>';
+  } else {
+    results.accounts.forEach(a => {
+      html += '<p class="section-head">' + escapeHtml(a.name) + ' \u00b7 CHF ' + fmtCHF(a.total) + '</p>';
+      a.groups.forEach(g => {
+        if(g.name) html += '<p style="font-size:13px;font-weight:600;color:var(--ink-soft);margin:8px 0 4px;">' + escapeHtml(g.name) + ' \u00b7 CHF ' + fmtCHF(g.total) + '</p>';
+        g.entries.forEach(e => {
+          html += '<div class="entry-row"><div class="entry-left"><p class="entry-month">' + fmtMonth(e.month) + '</p>';
+          if(e.note) html += '<p class="entry-note">' + escapeHtml(e.note) + '</p>';
+          html += '</div><div class="entry-right"><span class="entry-amount">CHF ' + fmtCHF(e.amount) + '</span></div></div>';
+        });
+      });
+    });
+  }
+  html += '</main>';
+  return html;
+}
+
+(async function init(){
+  await loadData();
+  render();
+})();
+</script>
