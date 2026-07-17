@@ -136,6 +136,8 @@
   table.grid tr.sum-row td{font-weight:700;color:var(--ink);background:var(--accent);}
   table.grid tr.sum-row td.month-cell{background:var(--accent);}
   .table-legend{font-size:12px;color:var(--ink-soft);margin:8px 2px 0;}
+  table.grid td.editable-cell{cursor:pointer;background:var(--accent-bg);color:var(--ink);font-weight:700;}
+  table.grid td.editable-cell:active{opacity:.7;}
 
   .chart-card{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:20px;background:var(--paper);}
   .chart-card-head{margin-bottom:10px;}
@@ -206,6 +208,7 @@ let state = {
   expandedSubs: new Set(),
   search: { from: '', to: '' },
   tableFilterYear: null,
+  tableEditMode: false,
   chartFilters: {}
 };
 
@@ -795,6 +798,9 @@ function renderTableView(){
     return html;
   }
 
+  html += '<button class="ghost-btn" style="' + (state.tableEditMode ? 'color:var(--accent-ink);font-weight:700;' : '') + '" onclick="toggleTableEditMode()">' + ICONS.edit + ' ' + (state.tableEditMode ? 'Done editing' : 'Edit') + '</button>';
+  if(state.tableEditMode) html += '<p class="table-legend" style="margin-top:6px;">Tap any amount below to edit that entry.</p>';
+
   html += '<div class="ghost-row" style="margin-bottom:10px;">';
   yearsAvailable().forEach(y => {
     const active = state.tableFilterYear === y;
@@ -840,7 +846,11 @@ function renderTableView(){
     columns.forEach(col => {
       const list = col.sub ? col.sub.entries : col.acc.entries;
       const sum = list.filter(e => e.month === monthKey).reduce((s,e) => s + (Number(e.amount)||0), 0);
-      html += '<td>' + fmtCHF(sum) + '</td>';
+      if(state.tableEditMode){
+        html += '<td class="editable-cell" onclick="openTableCellEditor(\'' + monthKey + '\',\'' + col.acc.id + '\',\'' + (col.sub ? col.sub.id : '') + '\')">' + fmtCHF(sum) + '</td>';
+      } else {
+        html += '<td>' + fmtCHF(sum) + '</td>';
+      }
     });
     html += '</tr>';
   });
@@ -850,6 +860,7 @@ function renderTableView(){
   html += '</main>';
   return html;
 }
+function toggleTableEditMode(){ state.tableEditMode = !state.tableEditMode; render(); }
 
 const MONTH_NAMES_FULL = MONTH_NAMES;
 function csvNum(n){
@@ -1837,6 +1848,130 @@ async function confirmImportAims(){
   if(!pendingAimsImport) return;
   state.aims = pendingAimsImport;
   pendingAimsImport = null;
+  await saveData();
+  closeModal();
+  render();
+}
+
+// ============ Table cell editor (edit mode) ============
+
+function openTableCellEditor(monthKey, accId, subId){
+  if(!state.tableEditMode) return;
+  const acc = getAccount(accId);
+  if(!acc) return;
+  const sub = subId ? getSub(acc, subId) : null;
+  const list = sub ? sub.entries : acc.entries;
+  const existingEntries = list.filter(e => e.month === monthKey);
+  const amount = existingEntries.reduce((s,e) => s + (Number(e.amount)||0), 0);
+  const note = existingEntries.map(e => e.note).filter(Boolean).join('; ');
+  const [y,m] = monthKey.split('-');
+
+  const accOptions = state.accounts.map(a => '<option value="' + a.id + '"' + (a.id === accId ? ' selected' : '') + '>' + escapeHtml(a.name) + '</option>').join('');
+
+  openModal(
+    '<p class="modal-title">Edit entry</p>' +
+    '<div class="month-year-row">' +
+      '<div class="field"><label>Month</label><select id="cellMonth">' + MONTH_NAMES.map((mn,i) => '<option value="' + (i+1) + '"' + (i+1 === parseInt(m,10) ? ' selected' : '') + '>' + mn + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Year</label><input id="cellYear" type="number" value="' + y + '" min="2015" max="2035"></div>' +
+    '</div>' +
+    '<div class="field"><label>Savings</label><select id="cellAccount" onchange="refreshCellSubOptions()">' + accOptions + '</select></div>' +
+    '<div class="field" id="cellSubWrap">' + renderCellSubField(accId, subId) + '</div>' +
+    '<div class="field"><label>Amount (CHF)</label><input id="cellAmount" type="number" step="0.01" value="' + (existingEntries.length ? amount : '') + '" placeholder="0.00"></div>' +
+    '<div class="field"><label>Note (optional)</label><input id="cellNote" type="text" value="' + escapeHtml(note) + '"></div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitCellEdit(\'' + monthKey + '\',\'' + accId + '\',\'' + (subId || '') + '\')">Save</button></div>'
+  );
+}
+function renderCellSubField(accId, selectedSubId){
+  const acc = getAccount(accId);
+  if(!acc || acc.subcategories.length === 0){
+    return '<label>Subcategory</label><select id="cellSub" disabled><option>Whole account</option></select>';
+  }
+  let html = '<label>Subcategory</label><select id="cellSub">';
+  acc.subcategories.forEach(s => {
+    html += '<option value="' + s.id + '"' + (s.id === selectedSubId ? ' selected' : '') + '>' + escapeHtml(s.name) + '</option>';
+  });
+  html += '</select>';
+  return html;
+}
+function refreshCellSubOptions(){
+  const accId = document.getElementById('cellAccount').value;
+  document.getElementById('cellSubWrap').innerHTML = renderCellSubField(accId, null);
+}
+
+let pendingCellEdit = null;
+
+async function submitCellEdit(origMonthKey, origAccId, origSubId){
+  const m = parseInt(document.getElementById('cellMonth').value, 10);
+  const y = parseInt(document.getElementById('cellYear').value, 10);
+  const targetAccId = document.getElementById('cellAccount').value;
+  const targetAcc = getAccount(targetAccId);
+  const subSelect = document.getElementById('cellSub');
+  const targetSubId = (targetAcc.subcategories.length > 0 && subSelect && !subSelect.disabled) ? subSelect.value : null;
+  const amountRaw = document.getElementById('cellAmount').value;
+  const note = document.getElementById('cellNote').value.trim();
+  if(!y || amountRaw.trim() === '') return;
+  const amount = parseFloat(amountRaw);
+  if(isNaN(amount) || !targetAcc) return;
+  const targetMonthKey = y + '-' + String(m).padStart(2,'0');
+
+  const moved = (targetAccId !== origAccId) || ((targetSubId||'') !== (origSubId||'')) || (targetMonthKey !== origMonthKey);
+  const targetList = targetSubId ? getSub(targetAcc, targetSubId).entries : targetAcc.entries;
+  const existingAtTarget = targetList.filter(e => e.month === targetMonthKey);
+  const existingTargetTotal = existingAtTarget.reduce((s,e) => s + (Number(e.amount)||0), 0);
+
+  const edit = { origMonthKey, origAccId, origSubId: origSubId || null, targetMonthKey, targetAccId, targetSubId, amount, note };
+
+  if(moved && existingTargetTotal !== 0){
+    pendingCellEdit = edit;
+    const targetLabel = targetSubId ? getSub(targetAcc, targetSubId).name : targetAcc.name;
+    openModal(
+      '<p class="modal-title">' + escapeHtml(targetLabel) + ' already has CHF ' + fmtCHFRound(existingTargetTotal) + ' for ' + fmtMonth(targetMonthKey) + '</p>' +
+      '<p class="modal-warn">How should this be combined?</p>' +
+      '<div class="modal-actions" style="flex-direction:column;">' +
+        '<button class="btn primary" style="width:100%;margin-bottom:8px;" onclick="resolveCellConflict(\'sum\')">Sum both amounts</button>' +
+        '<button class="btn danger" style="width:100%;margin-bottom:8px;" onclick="resolveCellConflict(\'override\')">Override existing</button>' +
+        '<button class="btn" style="width:100%;" onclick="closeModal()">Cancel</button>' +
+      '</div>'
+    );
+    return;
+  }
+
+  await applyCellEdit(edit, 'override');
+}
+
+async function resolveCellConflict(mode){
+  if(!pendingCellEdit) return;
+  await applyCellEdit(pendingCellEdit, mode);
+  pendingCellEdit = null;
+}
+
+async function applyCellEdit(edit, mode){
+  const origAcc = getAccount(edit.origAccId);
+  if(edit.origSubId){
+    const s = getSub(origAcc, edit.origSubId);
+    if(s) s.entries = s.entries.filter(e => e.month !== edit.origMonthKey);
+  } else if(origAcc){
+    origAcc.entries = origAcc.entries.filter(e => e.month !== edit.origMonthKey);
+  }
+
+  const targetAcc = getAccount(edit.targetAccId);
+  const targetContainer = edit.targetSubId ? getSub(targetAcc, edit.targetSubId) : targetAcc;
+  const existingAtTarget = targetContainer.entries.filter(e => e.month === edit.targetMonthKey);
+  const existingTotal = existingAtTarget.reduce((s,e) => s + (Number(e.amount)||0), 0);
+  const existingNotes = existingAtTarget.map(e => e.note).filter(Boolean);
+  targetContainer.entries = targetContainer.entries.filter(e => e.month !== edit.targetMonthKey);
+
+  let finalAmount = edit.amount;
+  let finalNote = edit.note;
+  if(mode === 'sum'){
+    finalAmount = existingTotal + edit.amount;
+    const notes = existingNotes.slice();
+    if(edit.note) notes.push(edit.note);
+    finalNote = notes.join('; ');
+  }
+
+  targetContainer.entries.push({ id: uid(), month: edit.targetMonthKey, amount: finalAmount, note: finalNote });
+
   await saveData();
   closeModal();
   render();
