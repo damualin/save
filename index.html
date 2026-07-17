@@ -178,7 +178,7 @@
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modalBody"></div>
 </div>
-<button id="undoFab" class="undo-btn" onclick="undoLastAction()" aria-label="Undo last change" style="opacity:.35;"></button>
+<button id="undoFab" class="undo-btn" onclick="undoLastAction()" aria-label="Undo last change" style="display:none;"></button>
 
 <script>
 const ICONS = {
@@ -293,7 +293,7 @@ function undoLastAction(){
 function updateUndoButtonState(){
   const btn = document.getElementById('undoFab');
   if(!btn) return;
-  btn.style.opacity = undoSnapshot ? '1' : '.35';
+  btn.style.display = undoSnapshot ? 'flex' : 'none';
 }
 
 function showExportPrompt(){
@@ -352,7 +352,7 @@ function goHome(){ state.view = 'home'; render(); }
 
 function refreshApp(){
   const base = window.location.origin + window.location.pathname;
-  window.location.href = base + '?_r=' + Date.now();
+  window.location.href = base + '?_r=' + Date.now() + '&view=' + encodeURIComponent(state.view);
 }
 
 function toggleAccount(id){
@@ -970,7 +970,11 @@ function exportCSV(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'savings-ledger-' + new Date().toISOString().slice(0,10) + '.csv';
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  a.download = 'calculos de ahorro en cuarentena-' + dd + mm + yyyy + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1990,6 +1994,9 @@ async function applyCellEdit(edit, mode){
 (async function init(){
   document.getElementById('undoFab').innerHTML = ICONS.undo;
   await loadData();
+  const params = new URLSearchParams(window.location.search);
+  const v = params.get('view');
+  if(v && ['home','table','search','charts','aims'].includes(v)) state.view = v;
   render();
 })();
 </script>
