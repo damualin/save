@@ -213,16 +213,31 @@ async function loadData(){
     }
   }catch(e){}
   state.accounts = defaultData();
-  saveData();
+  saveData(false);
 }
 
-function saveData(){
+let exportPromptTimer = null;
+function saveData(promptExport){
+  if(promptExport === undefined) promptExport = true;
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.accounts));
   }catch(e){
     console.error('save failed', e);
     openModal('<p class="modal-title">Couldn\u2019t save</p><p class="modal-warn">Your device blocked local storage for this page (this can happen in private browsing). Your changes may not be kept after closing.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+    return;
   }
+  if(promptExport){
+    clearTimeout(exportPromptTimer);
+    exportPromptTimer = setTimeout(showExportPrompt, 350);
+  }
+}
+
+function showExportPrompt(){
+  openModal(
+    '<p class="modal-title">Export a backup?</p>' +
+    '<p class="modal-warn">Your change is saved on this device. Want to export an updated CSV backup too?</p>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Not now</button><button class="btn primary" onclick="exportCSV(); closeModal();">Export CSV</button></div>'
+  );
 }
 
 function fmtCHF(n){
@@ -984,7 +999,7 @@ async function doOverrideImport(){
   state.expandedAccounts = new Set();
   state.expandedSubs = new Set();
   pendingImport = null;
-  await saveData();
+  await saveData(false);
   closeModal();
   goHome();
 }
@@ -1035,7 +1050,7 @@ async function doMergeImport(parsed){
     added++;
   });
   pendingImport = null;
-  await saveData();
+  await saveData(false);
   goHome();
   openModal(
     '<p class="modal-title">Import complete</p>' +
