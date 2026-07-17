@@ -678,22 +678,50 @@ function deleteBulkFieldEntry(accId, subId){
   refreshBulkFields();
 }
 
+let bulkEntryModalTitle = 'Add monthly entry';
 function promptBulkEntry(){ openBulkEntryModal('Add monthly entry'); }
 function promptEditMonthlyEntry(){ openBulkEntryModal('Edit monthly entry'); }
 
-function openBulkEntryModal(title){
+function openBulkEntryModal(title, presetMonth, presetYear){
+  bulkEntryModalTitle = title;
   const now = new Date();
-  const monthKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const monthNum = presetMonth || (now.getMonth()+1);
+  const yearNum = presetYear || now.getFullYear();
+  const monthKey = yearNum + '-' + String(monthNum).padStart(2,'0');
   openModal(
     '<p class="modal-title">' + title + '</p>' +
     '<p class="modal-warn">Leave an amount blank to skip it. Fields already have a value (and any note) if that month was recorded before.</p>' +
     '<div class="month-year-row">' +
-      '<div class="field"><label>Month</label><select id="bulkMonth" onchange="refreshBulkFields()">' + MONTH_NAMES.map((m,i) => '<option value="' + (i+1) + '"' + (i+1 === now.getMonth()+1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div>' +
-      '<div class="field"><label>Year</label><input id="bulkYear" type="number" value="' + now.getFullYear() + '" min="2015" max="2035" onchange="refreshBulkFields()"></div>' +
+      '<div class="field"><label>Month</label><select id="bulkMonth" onchange="refreshBulkFields()">' + MONTH_NAMES.map((m,i) => '<option value="' + (i+1) + '"' + (i+1 === monthNum ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Year</label><input id="bulkYear" type="number" value="' + yearNum + '" min="2015" max="2035" onchange="refreshBulkFields()"></div>' +
     '</div>' +
     '<div id="bulkFieldsWrap">' + renderBulkFields(monthKey) + '</div>' +
+    '<button type="button" class="ghost-btn" style="color:var(--accent-ink);margin-top:6px;" onclick="confirmDeleteWholeMonth()">' + ICONS.trash + ' Delete this whole month</button>' +
     '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitBulkEntry()">Save month</button></div>'
   );
+}
+function confirmDeleteWholeMonth(){
+  const m = parseInt(document.getElementById('bulkMonth').value, 10);
+  const y = parseInt(document.getElementById('bulkYear').value, 10);
+  if(!y) return;
+  const monthKey = y + '-' + String(m).padStart(2,'0');
+  openModal(
+    '<p class="modal-title">Delete ' + fmtMonth(monthKey) + '?</p>' +
+    '<p class="modal-warn">This removes every entry recorded for this month, across every account and subcategory. You can use Undo afterward if you change your mind.</p>' +
+    '<div class="modal-actions"><button class="btn" onclick="openBulkEntryModal(\'' + bulkEntryModalTitle + '\', ' + m + ', ' + y + ')">Cancel</button><button class="btn danger" onclick="deleteWholeMonth(' + m + ',' + y + ')">Delete month</button></div>'
+  );
+}
+async function deleteWholeMonth(m, y){
+  const monthKey = y + '-' + String(m).padStart(2,'0');
+  state.accounts.forEach(acc => {
+    if(acc.subcategories.length > 0){
+      acc.subcategories.forEach(sub => { sub.entries = sub.entries.filter(e => e.month !== monthKey); });
+    } else {
+      acc.entries = acc.entries.filter(e => e.month !== monthKey);
+    }
+  });
+  await saveData();
+  openBulkEntryModal(bulkEntryModalTitle, m, y);
 }
 function refreshBulkFields(){
   const m = document.getElementById('bulkMonth').value;
