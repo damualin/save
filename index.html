@@ -28,6 +28,10 @@
   button, input, select{font-family:inherit;}
 
   header.top{padding:24px 20px 16px;position:sticky;top:0;background:var(--bg);z-index:6;}
+  .refresh-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--paper);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);flex-shrink:0;}
+  .refresh-btn svg{width:16px;height:16px;}
+  .refresh-btn:active{background:var(--accent-bg);color:var(--accent-ink);}
+  .home-top-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
   .eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-ink);font-weight:600;margin:0 0 6px;}
   .grand-total{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:36px;font-weight:600;letter-spacing:-0.02em;line-height:1.05;color:var(--accent-ink);}
   .grand-total small{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink-soft);margin-right:6px;}
@@ -50,7 +54,7 @@
 
   main{padding:4px 20px 8px;}
 
-  .nav-row{display:flex;align-items:center;gap:10px;padding:18px 20px 4px;}
+  .nav-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 20px 4px;}
   .back-btn{display:flex;align-items:center;gap:4px;background:none;border:none;color:var(--accent-ink);font-size:15px;font-weight:600;padding:6px 4px 6px 0;cursor:pointer;}
   .back-btn svg{width:16px;height:16px;}
   .page-title{font-size:21px;font-weight:600;letter-spacing:-.01em;margin:2px 20px 14px;}
@@ -169,7 +173,8 @@ const ICONS = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>',
-  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>'
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>'
 };
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -225,6 +230,11 @@ function fmtCHF(n){
   const formatted = new Intl.NumberFormat('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(num));
   return (num < 0 ? '\u2212' : '') + formatted;
 }
+function fmtCHFRound(n){
+  const num = Math.round(Number(n) || 0);
+  const formatted = new Intl.NumberFormat('de-CH', { maximumFractionDigits: 0 }).format(Math.abs(num));
+  return (num < 0 ? '\u2212' : '') + formatted;
+}
 function fmtMonth(ym){
   if(!ym) return '';
   const [y,m] = ym.split('-');
@@ -259,6 +269,11 @@ function render(){
 }
 function goHome(){ state.view = 'home'; render(); }
 
+function refreshApp(){
+  const base = window.location.origin + window.location.pathname;
+  window.location.href = base + '?_r=' + Date.now();
+}
+
 function toggleAccount(id){
   if(state.expandedAccounts.has(id)) state.expandedAccounts.delete(id);
   else state.expandedAccounts.add(id);
@@ -272,7 +287,8 @@ function toggleSub(id){
 
 function renderHome(){
   let html = '<header class="top">';
-  html += '<p class="eyebrow">Sparkonten \u00b7 savings ledger</p>';
+  html += '<div class="home-top-row"><p class="eyebrow">Sparkonten \u00b7 savings ledger</p>';
+  html += '<button class="refresh-btn" onclick="refreshApp()" aria-label="Refresh app">' + ICONS.refresh + '</button></div>';
   html += '<div class="grand-total"><small>CHF</small>' + fmtCHF(grandTotal()) + '</div>';
   html += '<button class="primary-cta" onclick="promptBulkEntry()">' + ICONS.plus + ' Add monthly entry</button>';
   html += '<div class="ghost-row">';
@@ -631,7 +647,7 @@ function sumForColumn(col, monthKeys){
 }
 
 function renderTableView(){
-  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button><button class="refresh-btn" onclick="refreshApp()" aria-label="Refresh app">' + ICONS.refresh + '</button></div>';
   html += '<div class="page-title">All accounts</div>';
   html += '<main>';
 
@@ -1116,7 +1132,7 @@ function computeSearchResults(from, to){
 function renderSearchView(){
   const from = state.search.from;
   const to = state.search.to;
-  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button><button class="refresh-btn" onclick="refreshApp()" aria-label="Refresh app">' + ICONS.refresh + '</button></div>';
   html += '<div class="page-title">Search history</div>';
   html += '<main>';
 
@@ -1231,7 +1247,7 @@ function buildAreaPath(bottoms, tops, xForIndex, yForValue){
 }
 
 function renderChartSVG(seriesList, months){
-  const W = 600, H = 220, padL = 46, padR = 10, padT = 14, padB = 26;
+  const W = 600, H = 220, padL = 52, padR = 10, padT = 14, padB = 26;
   const chartW = W - padL - padR, chartH = H - padT - padB;
   const n = months.length;
 
@@ -1252,7 +1268,7 @@ function renderChartSVG(seriesList, months){
   [yLo + yPad, (yLo+yHi)/2, yHi - yPad].forEach(v => {
     const y = yForValue(v);
     svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W-padR) + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/>';
-    svg += '<text x="' + (padL-6) + '" y="' + (y+3) + '" text-anchor="end" font-size="9" fill="var(--ink-soft)" font-family="var(--sans)">' + fmtCHF(v) + '</text>';
+    svg += '<text x="' + (padL-6) + '" y="' + (y+3) + '" text-anchor="end" font-size="9" fill="var(--ink-soft)" font-family="var(--sans)">' + fmtCHFRound(v) + '</text>';
   });
   // zero line, if in range
   if(yLo < 0 && yHi > 0){
@@ -1280,7 +1296,7 @@ function renderChartSVG(seriesList, months){
 }
 
 function renderChartsView(){
-  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button><button class="refresh-btn" onclick="refreshApp()" aria-label="Refresh app">' + ICONS.refresh + '</button></div>';
   html += '<div class="page-title">Charts</div>';
   html += '<main>';
 
@@ -1323,7 +1339,7 @@ function renderChartsView(){
     ).slice(-1)[0] : 0;
 
     html += '<p class="chart-balance-label">' + (filter.subId ? escapeHtml(activeSources[0].name) : 'Balance') + (filter.year ? ' \u00b7 ' + filter.year : '') + '</p>';
-    html += '<p class="chart-balance">CHF ' + fmtCHF(latest) + '</p>';
+    html += '<p class="chart-balance">CHF ' + fmtCHFRound(latest) + '</p>';
     html += '</div>';
 
     html += renderChartSVG(seriesList, months);
