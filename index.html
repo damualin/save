@@ -346,6 +346,7 @@ function renderHome(){
   }
 
   html += '<button class="add-btn" onclick="promptAddAccount()">' + ICONS.plus + ' Add account</button>';
+  html += '<button class="add-btn" onclick="promptEditMonthlyEntry()">' + ICONS.edit + ' Edit monthly entry</button>';
   html += '<p style="font-size:11.5px;color:var(--ink-soft);margin:14px 2px 0;line-height:1.5;">Stored only on this device. Export a CSV backup now and then.</p>';
   html += '</main>';
   return html;
@@ -552,6 +553,7 @@ async function submitDeleteEntry(accId, subId, entryId){
 }
 
 function bulkFieldId(acc, sub){ return 'bulk_' + (sub ? sub.id : acc.id); }
+function bulkNoteFieldId(acc, sub){ return 'bulknote_' + (sub ? sub.id : acc.id); }
 
 function renderBulkFields(monthKey){
   let html = '';
@@ -561,23 +563,32 @@ function renderBulkFields(monthKey){
       html += '<div class="bulk-grid">';
       acc.subcategories.forEach(sub => {
         const existing = sub.entries.find(e => e.month === monthKey);
-        html += '<div class="field"><label>' + escapeHtml(sub.name) + '</label><input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, sub) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '"></div>';
+        html += '<div class="field"><label>' + escapeHtml(sub.name) + '</label>' +
+                '<input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, sub) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '">' +
+                '<input type="text" id="' + bulkNoteFieldId(acc, sub) + '" placeholder="Note (optional)" value="' + escapeHtml(existing && existing.note ? existing.note : '') + '" style="margin-top:6px;">' +
+                '</div>';
       });
       html += '</div>';
     } else {
       const existing = acc.entries.find(e => e.month === monthKey);
-      html += '<div class="field"><input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, null) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '"></div>';
+      html += '<div class="field">' +
+              '<input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, null) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '">' +
+              '<input type="text" id="' + bulkNoteFieldId(acc, null) + '" placeholder="Note (optional)" value="' + escapeHtml(existing && existing.note ? existing.note : '') + '" style="margin-top:6px;">' +
+              '</div>';
     }
   });
   return html;
 }
 
-function promptBulkEntry(){
+function promptBulkEntry(){ openBulkEntryModal('Add monthly entry'); }
+function promptEditMonthlyEntry(){ openBulkEntryModal('Edit monthly entry'); }
+
+function openBulkEntryModal(title){
   const now = new Date();
   const monthKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   openModal(
-    '<p class="modal-title">Add monthly entry</p>' +
-    '<p class="modal-warn">Leave a field blank to skip it. Fields already have a value if that month was recorded before.</p>' +
+    '<p class="modal-title">' + title + '</p>' +
+    '<p class="modal-warn">Leave an amount blank to skip it. Fields already have a value (and any note) if that month was recorded before.</p>' +
     '<div class="month-year-row">' +
       '<div class="field"><label>Month</label><select id="bulkMonth" onchange="refreshBulkFields()">' + MONTH_NAMES.map((m,i) => '<option value="' + (i+1) + '"' + (i+1 === now.getMonth()+1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div>' +
       '<div class="field"><label>Year</label><input id="bulkYear" type="number" value="' + now.getFullYear() + '" min="2015" max="2035" onchange="refreshBulkFields()"></div>' +
@@ -598,7 +609,6 @@ async function submitBulkEntry(){
   const y = document.getElementById('bulkYear').value;
   if(!y) return;
   const monthKey = y + '-' + String(parseInt(m,10)).padStart(2,'0');
-  let touched = 0;
   state.accounts.forEach(acc => {
     if(acc.subcategories.length > 0){
       acc.subcategories.forEach(sub => {
@@ -606,20 +616,22 @@ async function submitBulkEntry(){
         if(!el || el.value.trim() === '') return;
         const amount = parseFloat(el.value);
         if(isNaN(amount)) return;
+        const noteEl = document.getElementById(bulkNoteFieldId(acc, sub));
+        const note = noteEl ? noteEl.value.trim() : '';
         const existing = sub.entries.find(e => e.month === monthKey);
-        if(existing) existing.amount = amount;
-        else sub.entries.push({ id: uid(), month: monthKey, amount, note: '' });
-        touched++;
+        if(existing){ existing.amount = amount; existing.note = note; }
+        else sub.entries.push({ id: uid(), month: monthKey, amount, note });
       });
     } else {
       const el = document.getElementById(bulkFieldId(acc, null));
       if(!el || el.value.trim() === '') return;
       const amount = parseFloat(el.value);
       if(isNaN(amount)) return;
+      const noteEl = document.getElementById(bulkNoteFieldId(acc, null));
+      const note = noteEl ? noteEl.value.trim() : '';
       const existing = acc.entries.find(e => e.month === monthKey);
-      if(existing) existing.amount = amount;
-      else acc.entries.push({ id: uid(), month: monthKey, amount, note: '' });
-      touched++;
+      if(existing){ existing.amount = amount; existing.note = note; }
+      else acc.entries.push({ id: uid(), month: monthKey, amount, note });
     }
   });
   await saveData();
