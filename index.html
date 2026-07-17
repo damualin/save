@@ -352,7 +352,7 @@ function goHome(){ state.view = 'home'; render(); }
 
 function refreshApp(){
   const base = window.location.origin + window.location.pathname;
-  window.location.href = base + '?_r=' + Date.now() + '&view=' + encodeURIComponent(state.view);
+  window.location.href = base + '?_r=' + Date.now();
 }
 
 function toggleAccount(id){
@@ -1994,9 +1994,6 @@ async function applyCellEdit(edit, mode){
 (async function init(){
   document.getElementById('undoFab').innerHTML = ICONS.undo;
   await loadData();
-  const params = new URLSearchParams(window.location.search);
-  const v = params.get('view');
-  if(v && ['home','table','search','charts','aims'].includes(v)) state.view = v;
   render();
 })();
 </script>
