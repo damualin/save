@@ -130,6 +130,20 @@
   table.grid tr.sum-row td.month-cell{background:var(--accent);}
   .table-legend{font-size:12px;color:var(--ink-soft);margin:8px 2px 0;}
 
+  .chart-card{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:20px;background:var(--paper);}
+  .chart-card-head{margin-bottom:10px;}
+  .chart-account-name{font-size:15.5px;font-weight:600;color:var(--accent-text);margin:0 0 2px;}
+  .chart-balance{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;color:var(--ink);margin:0;}
+  .chart-balance-label{font-size:11.5px;color:var(--ink-soft);margin:0 0 2px;}
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .pill{
+    display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;
+    border:1px solid var(--line);background:none;font-size:11.5px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer;
+  }
+  .pill.active{background:var(--accent-ink);border-color:var(--accent-ink);color:#fff;}
+  .pill-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
   .fade{animation:fadeIn .16s ease;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 </style>
@@ -154,7 +168,8 @@ const ICONS = {
   upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
-  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>'
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>'
 };
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -166,7 +181,8 @@ let state = {
   expandedAccounts: new Set(),
   expandedSubs: new Set(),
   search: { from: '', to: '' },
-  tableFilterYear: null
+  tableFilterYear: null,
+  chartFilters: {}
 };
 
 const STORAGE_KEY = 'ledger-accounts';
@@ -238,6 +254,7 @@ function render(){
   if(state.view === 'home') app.innerHTML = renderHome();
   else if(state.view === 'table') app.innerHTML = renderTableView();
   else if(state.view === 'search') app.innerHTML = renderSearchView();
+  else if(state.view === 'charts') app.innerHTML = renderChartsView();
   app.classList.remove('fade'); void app.offsetWidth; app.classList.add('fade');
 }
 function goHome(){ state.view = 'home'; render(); }
@@ -259,6 +276,7 @@ function renderHome(){
   html += '<div class="grand-total"><small>CHF</small>' + fmtCHF(grandTotal()) + '</div>';
   html += '<button class="primary-cta" onclick="promptBulkEntry()">' + ICONS.plus + ' Add monthly entry</button>';
   html += '<div class="ghost-row">';
+  html += '<button class="ghost-btn" onclick="openCharts()">' + ICONS.chart + ' Charts</button>';
   html += '<button class="ghost-btn" onclick="openTableView()">' + ICONS.grid + ' Table view</button>';
   html += '<button class="ghost-btn" onclick="openSearch()">' + ICONS.search + ' Search by date</button>';
   html += '<button class="ghost-btn" onclick="document.getElementById(\'importFileInput\').click()">' + ICONS.upload + ' Import CSV</button>';
@@ -715,6 +733,9 @@ function monthsBetween(minM, maxM){
 
 function buildCSVText(){
   const rows = [];
+  const columns = buildTableColumns();
+  const N = columns.length;
+
   let row1 = ['Total', csvNum(grandTotal())];
   state.accounts.forEach(acc => {
     const width = acc.subcategories.length > 0 ? acc.subcategories.length : 1;
@@ -725,12 +746,16 @@ function buildCSVText(){
       for(let i=0;i<width-2;i++) row1.push('');
     }
   });
+  for(let i=0;i<N;i++) row1.push('');
   rows.push(row1);
 
   let row2 = ['', ''];
   state.accounts.forEach(acc => {
     if(acc.subcategories.length > 0) acc.subcategories.forEach(s => row2.push(s.name));
     else row2.push('');
+  });
+  columns.forEach(col => {
+    row2.push('comment_' + (col.sub ? col.sub.name : col.acc.name));
   });
   rows.push(row2);
 
@@ -739,6 +764,7 @@ function buildCSVText(){
     if(acc.subcategories.length > 0) acc.subcategories.forEach(s => sumRow.push(csvNum(subTotal(s))));
     else sumRow.push(csvNum(accTotal(acc)));
   });
+  for(let i=0;i<N;i++) sumRow.push('');
   rows.push(sumRow);
 
   const { minM, maxM } = monthRange();
@@ -746,16 +772,15 @@ function buildCSVText(){
     monthsBetween(minM, maxM).forEach(monthKey => {
       const [y,m] = monthKey.split('-');
       let row = [MONTH_NAMES[parseInt(m,10)-1], y];
-      state.accounts.forEach(acc => {
-        if(acc.subcategories.length > 0){
-          acc.subcategories.forEach(s => {
-            const sum = s.entries.filter(e => e.month === monthKey).reduce((t,e) => t + (Number(e.amount)||0), 0);
-            row.push(csvNum(sum));
-          });
-        } else {
-          const sum = acc.entries.filter(e => e.month === monthKey).reduce((t,e) => t + (Number(e.amount)||0), 0);
-          row.push(csvNum(sum));
-        }
+      columns.forEach(col => {
+        const list = col.sub ? col.sub.entries : col.acc.entries;
+        const sum = list.filter(e => e.month === monthKey).reduce((t,e) => t + (Number(e.amount)||0), 0);
+        row.push(csvNum(sum));
+      });
+      columns.forEach(col => {
+        const list = col.sub ? col.sub.entries : col.acc.entries;
+        const notes = list.filter(e => e.month === monthKey && e.note && e.note.trim()).map(e => e.note.trim());
+        row.push(notes.join('; '));
       });
       rows.push(row);
     });
@@ -837,6 +862,9 @@ function buildStructureFromRows(rows){
     col += width;
   }
 
+  const N = columns.length;
+  const hasComments = widestRow >= (2 + 2*N);
+
   const entries = [];
   for(let r = dataStart; r < rows.length; r++){
     const row = rows[r];
@@ -853,7 +881,12 @@ function buildStructureFromRows(rows){
       if(cell === undefined || cell.trim() === '') return;
       const num = parseFloat(cell);
       if(isNaN(num)) return;
-      entries.push({ accountName: colDef.accountName, subName: colDef.subName, month: monthKey, amount: num });
+      let note = '';
+      if(hasComments){
+        const commentCell = row[2 + N + idx];
+        note = commentCell !== undefined ? commentCell.trim() : '';
+      }
+      entries.push({ accountName: colDef.accountName, subName: colDef.subName, month: monthKey, amount: num, note });
     });
   }
 
@@ -917,7 +950,7 @@ async function doOverrideImport(){
     const acc = newAccounts.find(a => a.name === e.accountName);
     if(!acc) return;
     const target = e.subName ? acc.subcategories.find(s => s.name === e.subName) : acc;
-    if(target) target.entries.push({ id: uid(), month: e.month, amount: e.amount, note: '' });
+    if(target) target.entries.push({ id: uid(), month: e.month, amount: e.amount, note: e.note || '' });
   });
   state.accounts = newAccounts;
   state.expandedAccounts = new Set();
@@ -970,7 +1003,7 @@ async function doMergeImport(parsed){
     if(!target) return;
     const exists = target.entries.some(x => x.month === e.month);
     if(exists){ skipped++; return; }
-    target.entries.push({ id: uid(), month: e.month, amount: e.amount, note: '' });
+    target.entries.push({ id: uid(), month: e.month, amount: e.amount, note: e.note || '' });
     added++;
   });
   pendingImport = null;
@@ -1116,6 +1149,211 @@ function renderSearchView(){
       });
     });
   }
+  html += '</main>';
+  return html;
+}
+
+// ============ Charts ============
+
+const CHART_PALETTE = ['#1D402D','#E4A030','#5D6D3D','#8A5D12','#93A868','#2F5943','#736F55','#5F7A66'];
+
+function openCharts(){ state.view = 'charts'; render(); }
+
+function chartFilterFor(accId){
+  if(!state.chartFilters[accId]) state.chartFilters[accId] = { year: null, subId: null };
+  return state.chartFilters[accId];
+}
+function setChartYear(accId, year){ chartFilterFor(accId).year = year; render(); }
+function setChartSub(accId, subId){ chartFilterFor(accId).subId = subId; render(); }
+
+/// Returns the list of {id, name, entries} "series" for an account —
+/// its subcategories, or the account itself if it has none.
+function chartSeriesSources(acc){
+  if(acc.subcategories.length > 0) return acc.subcategories.map(s => ({ id: s.id, name: s.name, entries: s.entries }));
+  return [{ id: acc.id, name: acc.name, entries: acc.entries }];
+}
+
+function accountMonthRange(acc){
+  let minM = null, maxM = null;
+  chartSeriesSources(acc).forEach(s => {
+    s.entries.forEach(e => {
+      if(!minM || e.month < minM) minM = e.month;
+      if(!maxM || e.month > maxM) maxM = e.month;
+    });
+  });
+  return { minM, maxM };
+}
+
+/// Cumulative running balance for one series, aligned to `months`.
+function cumulativeForEntries(entries, months){
+  const byMonth = {};
+  entries.forEach(e => { byMonth[e.month] = (byMonth[e.month]||0) + (Number(e.amount)||0); });
+  let running = 0;
+  return months.map(m => { running += (byMonth[m]||0); return running; });
+}
+
+/// Stacks a list of {name,color,values} series (each already cumulative)
+/// into per-month bottom/top bands, and returns the overall y-range.
+function stackSeries(seriesList, monthsCount){
+  const bands = seriesList.map(s => ({ name: s.name, color: s.color, bottoms: new Array(monthsCount), tops: new Array(monthsCount) }));
+  let yMin = 0, yMax = 0;
+  for(let i=0;i<monthsCount;i++){
+    let running = 0;
+    seriesList.forEach((s, si) => {
+      const bottom = running;
+      const top = running + s.values[i];
+      bands[si].bottoms[i] = bottom;
+      bands[si].tops[i] = top;
+      if(bottom < yMin) yMin = bottom;
+      if(top < yMin) yMin = top;
+      if(bottom > yMax) yMax = bottom;
+      if(top > yMax) yMax = top;
+      running = top;
+    });
+  }
+  return { bands, yMin, yMax };
+}
+
+function buildAreaPath(bottoms, tops, xForIndex, yForValue){
+  const n = tops.length;
+  if(n === 0) return '';
+  if(n === 1){
+    const x = xForIndex(0);
+    const halfW = 6;
+    return 'M' + (x-halfW) + ' ' + yForValue(tops[0]) + ' L' + (x+halfW) + ' ' + yForValue(tops[0]) +
+           ' L' + (x+halfW) + ' ' + yForValue(bottoms[0]) + ' L' + (x-halfW) + ' ' + yForValue(bottoms[0]) + ' Z';
+  }
+  let d = 'M' + xForIndex(0) + ' ' + yForValue(tops[0]);
+  for(let i=1;i<n;i++) d += ' L' + xForIndex(i) + ' ' + yForValue(tops[i]);
+  for(let i=n-1;i>=0;i--) d += ' L' + xForIndex(i) + ' ' + yForValue(bottoms[i]);
+  d += ' Z';
+  return d;
+}
+
+function renderChartSVG(seriesList, months){
+  const W = 600, H = 220, padL = 46, padR = 10, padT = 14, padB = 26;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const n = months.length;
+
+  const cumulative = seriesList.map(s => ({ name: s.name, color: s.color, values: cumulativeForEntries(s.entries, months) }));
+  const { bands, yMin, yMax } = stackSeries(cumulative, n);
+
+  let yLo = yMin, yHi = yMax;
+  if(yLo === yHi){ yLo -= 10; yHi += 10; }
+  const yPad = (yHi - yLo) * 0.08;
+  yLo -= yPad; yHi += yPad;
+
+  const xForIndex = (i) => n <= 1 ? padL + chartW/2 : padL + (chartW * i)/(n-1);
+  const yForValue = (v) => padT + chartH * (1 - (v - yLo)/(yHi - yLo));
+
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">';
+
+  // gridlines + labels (min, mid, max)
+  [yLo + yPad, (yLo+yHi)/2, yHi - yPad].forEach(v => {
+    const y = yForValue(v);
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W-padR) + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/>';
+    svg += '<text x="' + (padL-6) + '" y="' + (y+3) + '" text-anchor="end" font-size="9" fill="var(--ink-soft)" font-family="var(--sans)">' + fmtCHF(v) + '</text>';
+  });
+  // zero line, if in range
+  if(yLo < 0 && yHi > 0){
+    const y0 = yForValue(0);
+    svg += '<line x1="' + padL + '" y1="' + y0 + '" x2="' + (W-padR) + '" y2="' + y0 + '" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="2,3"/>';
+  }
+
+  // bands (draw in reverse so the first series sits visually on top)
+  for(let bi=bands.length-1; bi>=0; bi--){
+    const b = bands[bi];
+    const path = buildAreaPath(b.bottoms, b.tops, xForIndex, yForValue);
+    svg += '<path d="' + path + '" fill="' + b.color + '" fill-opacity="0.88" stroke="' + b.color + '" stroke-width="1"/>';
+  }
+
+  // x-axis labels (sparse)
+  const maxLabels = 6;
+  const step = Math.max(1, Math.ceil(n / maxLabels));
+  for(let i=0;i<n;i+=step){
+    const x = xForIndex(i);
+    svg += '<text x="' + x + '" y="' + (H-8) + '" text-anchor="middle" font-size="9" fill="var(--ink-soft)" font-family="var(--sans)">' + fmtMonth(months[i]) + '</text>';
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+function renderChartsView(){
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button></div>';
+  html += '<div class="page-title">Charts</div>';
+  html += '<main>';
+
+  if(state.accounts.length === 0){
+    html += '<div class="empty"><p>Nothing to chart yet</p><p>Add an account first.</p></div></main>';
+    return html;
+  }
+
+  state.accounts.forEach(acc => {
+    const filter = chartFilterFor(acc.id);
+    const sources = chartSeriesSources(acc);
+    const { minM, maxM } = accountMonthRange(acc);
+
+    html += '<div class="chart-card">';
+    html += '<div class="chart-card-head"><p class="chart-account-name">' + escapeHtml(acc.name) + '</p>';
+
+    if(!minM){
+      html += '<div class="empty"><p>No entries yet</p><p>Add a monthly entry to see this chart.</p></div></div></div>';
+      return; // continue to next account
+    }
+
+    let months;
+    if(filter.year){
+      months = monthsBetween(filter.year + '-01', filter.year + '-12').filter(m => m >= minM && m <= maxM);
+      if(months.length === 0) months = monthsBetween(filter.year + '-01', filter.year + '-12');
+    } else {
+      months = monthsBetween(minM, maxM);
+    }
+
+    const activeSources = filter.subId ? sources.filter(s => s.id === filter.subId) : sources;
+    const seriesList = activeSources.map((s, i) => ({
+      name: s.name,
+      entries: s.entries,
+      color: CHART_PALETTE[sources.findIndex(x => x.id === s.id) % CHART_PALETTE.length]
+    }));
+
+    const latest = months.length ? cumulativeForEntries(
+      filter.subId ? activeSources[0].entries : sources.flatMap(s => s.entries),
+      months
+    ).slice(-1)[0] : 0;
+
+    html += '<p class="chart-balance-label">' + (filter.subId ? escapeHtml(activeSources[0].name) : 'Balance') + (filter.year ? ' \u00b7 ' + filter.year : '') + '</p>';
+    html += '<p class="chart-balance">CHF ' + fmtCHF(latest) + '</p>';
+    html += '</div>';
+
+    html += renderChartSVG(seriesList, months);
+
+    // year filter pills
+    const years = new Set();
+    monthsBetween(minM, maxM).forEach(m => years.add(parseInt(m.slice(0,4),10)));
+    html += '<div class="pill-row">';
+    html += '<button class="pill' + (!filter.year ? ' active' : '') + '" onclick="setChartYear(\'' + acc.id + '\', null)">All time</button>';
+    Array.from(years).sort((a,b)=>a-b).forEach(y => {
+      html += '<button class="pill' + (filter.year === y ? ' active' : '') + '" onclick="setChartYear(\'' + acc.id + '\', ' + y + ')">' + y + '</button>';
+    });
+    html += '</div>';
+
+    // subcategory filter pills (only if there is more than one series)
+    if(sources.length > 1){
+      html += '<div class="pill-row">';
+      html += '<button class="pill' + (!filter.subId ? ' active' : '') + '" onclick="setChartSub(\'' + acc.id + '\', null)">All subcategories</button>';
+      sources.forEach((s, i) => {
+        const color = CHART_PALETTE[i % CHART_PALETTE.length];
+        const active = filter.subId === s.id;
+        html += '<button class="pill' + (active ? ' active' : '') + '" onclick="setChartSub(\'' + acc.id + '\', \'' + s.id + '\')">' +
+                '<span class="pill-dot" style="background:' + (active ? '#fff' : color) + '"></span>' + escapeHtml(s.name) + '</button>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+
   html += '</main>';
   return html;
 }
