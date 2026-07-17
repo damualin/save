@@ -28,9 +28,12 @@
   button, input, select{font-family:inherit;}
 
   header.top{padding:24px 20px 16px;position:sticky;top:0;background:var(--bg);z-index:6;}
-  .refresh-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--paper);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);flex-shrink:0;}
+  .refresh-btn{width:34px;height:34px;border-radius:9px;border:none;background:#93A868;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);flex-shrink:0;}
   .refresh-btn svg{width:16px;height:16px;}
-  .refresh-btn:active{background:var(--accent-bg);color:var(--accent-ink);}
+  .refresh-btn:active{opacity:.8;}
+  .undo-btn{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:11px;border:none;background:#E4A030;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);z-index:30;box-shadow:0 2px 10px rgba(0,0,0,.18);}
+  .undo-btn svg{width:19px;height:19px;}
+  .undo-btn:active{opacity:.8;}
   .home-top-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
   .eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-ink);font-weight:600;margin:0 0 6px;}
   .grand-total{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:36px;font-weight:600;letter-spacing:-0.02em;line-height:1.05;color:var(--accent-ink);}
@@ -148,6 +151,17 @@
   .pill.active{background:var(--accent-ink);border-color:var(--accent-ink);color:#fff;}
   .pill-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
+  .aim-bar-track{position:relative;height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:10px 0 6px;}
+  .aim-bar-fill{position:absolute;top:0;bottom:0;border-radius:6px;transition:width .2s ease;}
+  .aim-meta{font-size:12px;color:var(--ink-soft);margin:0;}
+  .aim-row-actions{display:flex;gap:8px;margin-top:10px;}
+  .aim-row-actions .icon-btn{border:1px solid var(--line);}
+  .aim-banner{border-radius:10px;padding:12px;margin-top:12px;}
+  .aim-banner.success{background:var(--accent-bg);}
+  .aim-banner.missed{background:var(--line);}
+  .aim-banner p{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--ink);}
+  .aim-banner .modal-actions{margin-top:0;}
+
   .fade{animation:fadeIn .16s ease;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 </style>
@@ -157,9 +171,11 @@
   <p style="font-size:14px;line-height:1.6;color:#65635C;margin:0;">Tap the <strong>Share</strong> icon above, then choose <strong>Open in Safari</strong> to load the app.</p>
 </div></div>
 <input type="file" id="importFileInput" accept=".csv,text/csv" style="display:none" onchange="handleImportFile(event)">
+<input type="file" id="aimsImportFileInput" accept=".csv,text/csv" style="display:none" onchange="handleImportAimsFile(event)">
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modalBody"></div>
 </div>
+<button id="undoFab" class="undo-btn" onclick="undoLastAction()" aria-label="Undo last change" style="opacity:.35;"></button>
 
 <script>
 const ICONS = {
@@ -174,7 +190,9 @@ const ICONS = {
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>',
-  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>'
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a8 8 0 0 1 14.5-4.5"/><polyline points="17.5 3 17.5 7.5 13 7.5"/><path d="M21 12a8 8 0 0 1-14.5 4.5"/><polyline points="6.5 21 6.5 16.5 11 16.5"/></svg>',
+  undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-6a4 4 0 0 0-4-4H4"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>'
 };
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -182,6 +200,7 @@ const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct',
 
 let state = {
   accounts: [],
+  aims: [],
   view: 'home',
   expandedAccounts: new Set(),
   expandedSubs: new Set(),
@@ -208,19 +227,30 @@ async function loadData(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
-      state.accounts = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)){
+        state.accounts = parsed;
+        state.aims = [];
+      } else {
+        state.accounts = parsed.accounts || [];
+        state.aims = parsed.aims || [];
+      }
       return;
     }
   }catch(e){}
   state.accounts = defaultData();
+  state.aims = [];
   saveData(false);
 }
 
 let exportPromptTimer = null;
+let undoSnapshot = null;
 function saveData(promptExport){
   if(promptExport === undefined) promptExport = true;
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.accounts));
+    const prev = localStorage.getItem(STORAGE_KEY);
+    if(prev !== null) undoSnapshot = prev;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ accounts: state.accounts, aims: state.aims }));
   }catch(e){
     console.error('save failed', e);
     openModal('<p class="modal-title">Couldn\u2019t save</p><p class="modal-warn">Your device blocked local storage for this page (this can happen in private browsing). Your changes may not be kept after closing.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
@@ -230,6 +260,36 @@ function saveData(promptExport){
     clearTimeout(exportPromptTimer);
     exportPromptTimer = setTimeout(showExportPrompt, 350);
   }
+}
+
+function undoLastAction(){
+  if(!undoSnapshot){
+    openModal('<p class="modal-title">Nothing to undo</p><p class="modal-warn">There\u2019s no recent change to reverse.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+    return;
+  }
+  try{
+    localStorage.setItem(STORAGE_KEY, undoSnapshot);
+    const parsed = JSON.parse(undoSnapshot);
+    if(Array.isArray(parsed)){
+      state.accounts = parsed;
+    } else {
+      state.accounts = parsed.accounts || [];
+      state.aims = parsed.aims || [];
+    }
+  }catch(e){
+    console.error('undo failed', e);
+  }
+  undoSnapshot = null;
+  clearTimeout(exportPromptTimer);
+  closeModal();
+  state.view = 'home';
+  render();
+}
+
+function updateUndoButtonState(){
+  const btn = document.getElementById('undoFab');
+  if(!btn) return;
+  btn.style.opacity = undoSnapshot ? '1' : '.35';
 }
 
 function showExportPrompt(){
@@ -280,7 +340,9 @@ function render(){
   else if(state.view === 'table') app.innerHTML = renderTableView();
   else if(state.view === 'search') app.innerHTML = renderSearchView();
   else if(state.view === 'charts') app.innerHTML = renderChartsView();
+  else if(state.view === 'aims') app.innerHTML = renderAimsView();
   app.classList.remove('fade'); void app.offsetWidth; app.classList.add('fade');
+  updateUndoButtonState();
 }
 function goHome(){ state.view = 'home'; render(); }
 
@@ -308,6 +370,7 @@ function renderHome(){
   html += '<button class="primary-cta" onclick="promptBulkEntry()">' + ICONS.plus + ' Add monthly entry</button>';
   html += '<div class="ghost-row">';
   html += '<button class="ghost-btn" onclick="openCharts()">' + ICONS.chart + ' Charts</button>';
+  html += '<button class="ghost-btn" onclick="openAims()">' + ICONS.target + ' Aims</button>';
   html += '<button class="ghost-btn" onclick="openTableView()">' + ICONS.grid + ' Table view</button>';
   html += '<button class="ghost-btn" onclick="openSearch()">' + ICONS.search + ' Search by date</button>';
   html += '<button class="ghost-btn" onclick="document.getElementById(\'importFileInput\').click()">' + ICONS.upload + ' Import CSV</button>';
@@ -442,6 +505,7 @@ function promptDeleteAccount(accId){
 async function submitDeleteAccount(accId){
   state.accounts = state.accounts.filter(a => a.id !== accId);
   state.expandedAccounts.delete(accId);
+  state.aims = state.aims.filter(a => a.accountId !== accId);
   await saveData();
   closeModal();
   render();
@@ -504,6 +568,7 @@ async function submitDeleteSub(accId, subId){
   const acc = getAccount(accId);
   acc.subcategories = acc.subcategories.filter(s => s.id !== subId);
   state.expandedSubs.delete(subId);
+  state.aims = state.aims.filter(a => a.subcategoryId !== subId);
   await saveData();
   closeModal();
   render();
@@ -579,7 +644,10 @@ function renderBulkFields(monthKey){
       acc.subcategories.forEach(sub => {
         const existing = sub.entries.find(e => e.month === monthKey);
         html += '<div class="field"><label>' + escapeHtml(sub.name) + '</label>' +
-                '<input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, sub) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '">' +
+                '<div style="display:flex;gap:6px;align-items:center;">' +
+                '<input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, sub) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '" style="flex:1;">' +
+                (existing ? '<button type="button" class="icon-btn danger" onclick="deleteBulkFieldEntry(\'' + acc.id + '\',\'' + sub.id + '\')" aria-label="Delete entry">' + ICONS.trash + '</button>' : '') +
+                '</div>' +
                 '<input type="text" id="' + bulkNoteFieldId(acc, sub) + '" placeholder="Note (optional)" value="' + escapeHtml(existing && existing.note ? existing.note : '') + '" style="margin-top:6px;">' +
                 '</div>';
       });
@@ -587,12 +655,27 @@ function renderBulkFields(monthKey){
     } else {
       const existing = acc.entries.find(e => e.month === monthKey);
       html += '<div class="field">' +
-              '<input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, null) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '">' +
+              '<div style="display:flex;gap:6px;align-items:center;">' +
+              '<input type="number" step="0.01" inputmode="decimal" id="' + bulkFieldId(acc, null) + '" placeholder="\u2014" value="' + (existing ? existing.amount : '') + '" style="flex:1;">' +
+              (existing ? '<button type="button" class="icon-btn danger" onclick="deleteBulkFieldEntry(\'' + acc.id + '\',null)" aria-label="Delete entry">' + ICONS.trash + '</button>' : '') +
+              '</div>' +
               '<input type="text" id="' + bulkNoteFieldId(acc, null) + '" placeholder="Note (optional)" value="' + escapeHtml(existing && existing.note ? existing.note : '') + '" style="margin-top:6px;">' +
               '</div>';
     }
   });
   return html;
+}
+
+function deleteBulkFieldEntry(accId, subId){
+  const acc = getAccount(accId);
+  const target = subId ? getSub(acc, subId) : acc;
+  const m = document.getElementById('bulkMonth').value;
+  const y = document.getElementById('bulkYear').value;
+  if(!y) return;
+  const monthKey = y + '-' + String(parseInt(m,10)).padStart(2,'0');
+  target.entries = target.entries.filter(e => e.month !== monthKey);
+  saveData(false);
+  refreshBulkFields();
 }
 
 function promptBulkEntry(){ openBulkEntryModal('Add monthly entry'); }
@@ -1401,7 +1484,338 @@ function renderChartsView(){
   return html;
 }
 
+// ============ Aims ============
+
+function openAims(){ state.view = 'aims'; render(); }
+
+function aimAccount(aim){ return getAccount(aim.accountId); }
+function aimSubcategory(aim){
+  const acc = aimAccount(aim);
+  return (acc && aim.subcategoryId) ? getSub(acc, aim.subcategoryId) : null;
+}
+function aimCurrentBalance(aim){
+  const acc = aimAccount(aim);
+  if(!acc) return 0;
+  const sub = aimSubcategory(aim);
+  return sub ? subTotal(sub) : accTotal(acc);
+}
+function aimLabel(aim){
+  const acc = aimAccount(aim);
+  if(!acc) return 'Unknown';
+  const sub = aimSubcategory(aim);
+  return sub ? acc.name + ' \u203a ' + sub.name : acc.name;
+}
+function currentMonthKey(){
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+}
+function aimStatus(aim){
+  const balance = aimCurrentBalance(aim);
+  const today = currentMonthKey();
+  if(balance >= aim.targetAmount) return today <= aim.targetMonth ? 'achieved-early' : 'achieved-late';
+  return today > aim.targetMonth ? 'missed' : 'in-progress';
+}
+
+function promptAddAim(){
+  if(state.accounts.length === 0){
+    openModal('<p class="modal-title">Add an account first</p><p class="modal-warn">Aims need an account or subcategory to track.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+    return;
+  }
+  const now = new Date();
+  const accOptions = state.accounts.map(a => '<option value="' + a.id + '">' + escapeHtml(a.name) + '</option>').join('');
+  openModal(
+    '<p class="modal-title">Add aim</p>' +
+    '<div class="field"><label>Applies to</label><select id="aimAccountSelect" onchange="refreshAimSubOptions()">' + accOptions + '</select></div>' +
+    '<div class="field" id="aimSubWrap">' + renderAimSubField(state.accounts[0].id) + '</div>' +
+    '<div class="field"><label>Target amount (CHF)</label><input id="aimAmount" type="number" step="0.01" placeholder="0.00"></div>' +
+    '<div class="month-year-row">' +
+      '<div class="field"><label>Target month</label><select id="aimMonth">' + MONTH_NAMES.map((m,i) => '<option value="' + (i+1) + '"' + (i+1 === now.getMonth()+1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Target year</label><input id="aimYear" type="number" value="' + now.getFullYear() + '" min="2015" max="2035"></div>' +
+    '</div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitAddAim()">Add aim</button></div>'
+  );
+}
+function renderAimSubField(accId){
+  const acc = getAccount(accId);
+  if(!acc || acc.subcategories.length === 0) return '<label>Subcategory</label><select id="aimSubSelect"><option value="">Whole account</option></select>';
+  let html = '<label>Subcategory</label><select id="aimSubSelect"><option value="">Whole account</option>';
+  acc.subcategories.forEach(s => { html += '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>'; });
+  html += '</select>';
+  return html;
+}
+function refreshAimSubOptions(){
+  const accId = document.getElementById('aimAccountSelect').value;
+  document.getElementById('aimSubWrap').innerHTML = renderAimSubField(accId);
+}
+async function submitAddAim(){
+  const accId = document.getElementById('aimAccountSelect').value;
+  const subId = document.getElementById('aimSubSelect').value || null;
+  const amount = parseFloat(document.getElementById('aimAmount').value);
+  const m = document.getElementById('aimMonth').value;
+  const y = document.getElementById('aimYear').value;
+  if(!accId || isNaN(amount) || !y) return;
+  const targetMonth = y + '-' + String(parseInt(m,10)).padStart(2,'0');
+  state.aims.push({ id: uid(), accountId: accId, subcategoryId: subId, targetAmount: amount, targetMonth, history: [] });
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptEditAim(aimId){
+  const aim = state.aims.find(a => a.id === aimId);
+  if(!aim) return;
+  const [y,m] = aim.targetMonth.split('-');
+  openModal(
+    '<p class="modal-title">Edit aim</p>' +
+    '<p class="modal-warn">' + escapeHtml(aimLabel(aim)) + '</p>' +
+    '<div class="field"><label>Target amount (CHF)</label><input id="aimAmount" type="number" step="0.01" value="' + aim.targetAmount + '"></div>' +
+    '<div class="month-year-row">' +
+      '<div class="field"><label>Target month</label><select id="aimMonth">' + MONTH_NAMES.map((mn,i) => '<option value="' + (i+1) + '"' + (i+1 === parseInt(m,10) ? ' selected' : '') + '>' + mn + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Target year</label><input id="aimYear" type="number" value="' + y + '" min="2015" max="2035"></div>' +
+    '</div>' +
+    '<div class="modal-actions"><button class="btn danger" style="flex:0 0 auto;width:44px;" onclick="deleteAimConfirm(\'' + aimId + '\')" aria-label="Delete aim">' + ICONS.trash + '</button><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitEditAim(\'' + aimId + '\')">Save</button></div>'
+  );
+}
+async function submitEditAim(aimId){
+  const aim = state.aims.find(a => a.id === aimId);
+  if(!aim) return;
+  const amount = parseFloat(document.getElementById('aimAmount').value);
+  const m = document.getElementById('aimMonth').value;
+  const y = document.getElementById('aimYear').value;
+  if(isNaN(amount) || !y) return;
+  aim.targetAmount = amount;
+  aim.targetMonth = y + '-' + String(parseInt(m,10)).padStart(2,'0');
+  await saveData();
+  closeModal();
+  render();
+}
+
+function deleteAimConfirm(aimId){
+  openModal(
+    '<p class="modal-title">Delete this aim?</p>' +
+    '<p class="modal-warn">This can\u2019t be undone from here, but you can use the Undo button afterward if you change your mind.</p>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="deleteAimNow(\'' + aimId + '\')">Delete</button></div>'
+  );
+}
+async function deleteAimNow(aimId){
+  state.aims = state.aims.filter(a => a.id !== aimId);
+  await saveData();
+  closeModal();
+  render();
+}
+
+function promptExtendAim(aimId){
+  const aim = state.aims.find(a => a.id === aimId);
+  if(!aim) return;
+  const now = new Date();
+  openModal(
+    '<p class="modal-title">Extend this aim</p>' +
+    '<p class="modal-warn">' + escapeHtml(aimLabel(aim)) + ' \u2014 set a new target.</p>' +
+    '<div class="field"><label>New target amount (CHF)</label><input id="aimAmount" type="number" step="0.01" value="' + aim.targetAmount + '"></div>' +
+    '<div class="month-year-row">' +
+      '<div class="field"><label>New target month</label><select id="aimMonth">' + MONTH_NAMES.map((mn,i) => '<option value="' + (i+1) + '"' + (i+1 === now.getMonth()+1 ? ' selected' : '') + '>' + mn + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>New target year</label><input id="aimYear" type="number" value="' + now.getFullYear() + '" min="2015" max="2035"></div>' +
+    '</div>' +
+    '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="submitExtendAim(\'' + aimId + '\')">Extend</button></div>'
+  );
+}
+async function submitExtendAim(aimId){
+  const aim = state.aims.find(a => a.id === aimId);
+  if(!aim) return;
+  const amount = parseFloat(document.getElementById('aimAmount').value);
+  const m = document.getElementById('aimMonth').value;
+  const y = document.getElementById('aimYear').value;
+  if(isNaN(amount) || !y) return;
+  const status = aimStatus(aim);
+  if(status === 'achieved-early' || status === 'achieved-late'){
+    aim.history.push({ targetAmount: aim.targetAmount, targetMonth: aim.targetMonth });
+  }
+  aim.targetAmount = amount;
+  aim.targetMonth = y + '-' + String(parseInt(m,10)).padStart(2,'0');
+  await saveData();
+  closeModal();
+  render();
+}
+
+function renderAimBar(aim){
+  const balance = aimCurrentBalance(aim);
+  const target = aim.targetAmount;
+  const pct = target > 0 ? Math.max(0, Math.min(100, (balance/target)*100)) : 0;
+  let historyPct = 0;
+  if(aim.history.length){
+    const lastHistoryTarget = aim.history[aim.history.length-1].targetAmount;
+    historyPct = target > 0 ? Math.max(0, Math.min(pct, (lastHistoryTarget/target)*100)) : 0;
+  }
+  const status = aimStatus(aim);
+  const currentColor = status === 'missed' ? 'var(--accent-bg)' : 'var(--accent)';
+  let html = '<div class="aim-bar-track">';
+  if(historyPct > 0) html += '<div class="aim-bar-fill" style="left:0;width:' + historyPct + '%;background:var(--accent-ink);"></div>';
+  if(pct > historyPct) html += '<div class="aim-bar-fill" style="left:' + historyPct + '%;width:' + (pct-historyPct) + '%;background:' + currentColor + ';"></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderAimCard(aim){
+  const balance = aimCurrentBalance(aim);
+  const status = aimStatus(aim);
+  const pct = aim.targetAmount > 0 ? Math.round(Math.min(999, (balance/aim.targetAmount)*100)) : 0;
+
+  let html = '<div class="chart-card">';
+  html += '<p class="chart-account-name">' + escapeHtml(aimLabel(aim)) + '</p>';
+  html += '<p class="aim-meta">Target CHF ' + fmtCHFRound(aim.targetAmount) + ' by ' + fmtMonth(aim.targetMonth) + '</p>';
+  html += '<p class="chart-balance">CHF ' + fmtCHFRound(balance) + '</p>';
+  html += renderAimBar(aim);
+  html += '<p class="aim-meta">' + pct + '% of target' + (aim.history.length ? ' \u00b7 includes a previous goal you already reached' : '') + '</p>';
+
+  if(status === 'achieved-early' || status === 'achieved-late'){
+    html += '<div class="aim-banner success">';
+    html += '<p>\ud83c\udf89 ' + (status === 'achieved-early' ? 'Goal reached ahead of schedule!' : 'Goal reached!') + '</p>';
+    html += '<div class="modal-actions"><button class="btn" onclick="deleteAimNow(\'' + aim.id + '\')">Delete</button><button class="btn primary" onclick="promptExtendAim(\'' + aim.id + '\')">Extend</button></div>';
+    html += '</div>';
+  } else if(status === 'missed'){
+    html += '<div class="aim-banner missed">';
+    html += '<p>This goal\u2019s target date has passed without reaching the amount.</p>';
+    html += '<div class="modal-actions"><button class="btn" onclick="deleteAimNow(\'' + aim.id + '\')">Delete</button><button class="btn primary" onclick="promptExtendAim(\'' + aim.id + '\')">Extend</button></div>';
+    html += '</div>';
+  } else {
+    html += '<div class="aim-row-actions">';
+    html += '<button class="icon-btn" onclick="promptEditAim(\'' + aim.id + '\')" aria-label="Edit aim">' + ICONS.edit + '</button>';
+    html += '<button class="icon-btn danger" onclick="deleteAimConfirm(\'' + aim.id + '\')" aria-label="Delete aim">' + ICONS.trash + '</button>';
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderAimsView(){
+  let html = '<div class="nav-row"><button class="back-btn" onclick="goHome()">' + ICONS.back + ' Accounts</button><button class="refresh-btn" onclick="refreshApp()" aria-label="Refresh app">' + ICONS.refresh + '</button></div>';
+  html += '<div class="page-title">Aims</div>';
+  html += '<main>';
+  html += '<button class="add-btn" onclick="promptAddAim()">' + ICONS.plus + ' Add aim</button>';
+
+  if(state.aims.length === 0){
+    html += '<div class="empty"><p>No aims yet</p><p>Set a target amount and date for an account or subcategory.</p></div>';
+  } else {
+    state.aims.forEach(aim => { html += renderAimCard(aim); });
+  }
+
+  html += '<div style="display:flex;gap:16px;margin-top:8px;">';
+  html += '<button class="ghost-btn" onclick="document.getElementById(\'aimsImportFileInput\').click()">' + ICONS.upload + ' Import aims CSV</button>';
+  html += '<button class="ghost-btn" onclick="exportAimsCSV()">' + ICONS.download + ' Export aims CSV</button>';
+  html += '</div>';
+  html += '</main>';
+  return html;
+}
+
+function buildAimsCSVText(){
+  const rows = [['Applies To','Account','Subcategory','Target Amount (CHF)','Target Month','Target Year','Progress History']];
+  state.aims.forEach(aim => {
+    const acc = aimAccount(aim);
+    const sub = aimSubcategory(aim);
+    const [y,m] = aim.targetMonth.split('-');
+    const history = aim.history.map(h => {
+      const [hy,hm] = h.targetMonth.split('-');
+      return csvNum(h.targetAmount) + '@' + MONTH_NAMES[parseInt(hm,10)-1] + ' ' + hy;
+    }).join('; ');
+    rows.push([
+      sub ? 'Subcategory' : 'Account',
+      acc ? acc.name : '',
+      sub ? sub.name : '',
+      csvNum(aim.targetAmount),
+      MONTH_NAMES[parseInt(m,10)-1],
+      y,
+      history
+    ]);
+  });
+  return '\ufeff' + rows.map(csvRow).join('\r\n') + '\r\n';
+}
+function exportAimsCSV(){
+  const csv = buildAimsCSVText();
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'savings-aims-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parseAimsCSV(text){
+  const rows = parseCSV(text);
+  const aims = [];
+  for(let i=1;i<rows.length;i++){
+    const row = rows[i];
+    if(!row[1]) continue;
+    const applies = (row[0]||'').trim();
+    const accName = (row[1]||'').trim();
+    const subName = (row[2]||'').trim();
+    const amount = parseFloat(row[3]);
+    const monthLabel = (row[4]||'').trim();
+    const yearLabel = (row[5]||'').trim();
+    const mi = MONTH_NAMES.findIndex(mn => mn.toLowerCase() === monthLabel.toLowerCase());
+    if(mi === -1 || isNaN(amount) || !yearLabel) continue;
+    const acc = state.accounts.find(a => a.name === accName);
+    if(!acc) continue;
+    const sub = (applies === 'Subcategory' && subName) ? acc.subcategories.find(s => s.name === subName) : null;
+    const history = [];
+    if(row[6]){
+      row[6].split(';').forEach(part => {
+        const seg = part.trim();
+        if(!seg) return;
+        const at = seg.indexOf('@');
+        if(at === -1) return;
+        const amt = parseFloat(seg.slice(0, at).trim());
+        const dateParts = seg.slice(at+1).trim().split(' ');
+        if(dateParts.length < 2 || isNaN(amt)) return;
+        const hmi = MONTH_NAMES.findIndex(mn => mn.toLowerCase() === dateParts[0].toLowerCase());
+        if(hmi === -1) return;
+        history.push({ targetAmount: amt, targetMonth: dateParts[1] + '-' + String(hmi+1).padStart(2,'0') });
+      });
+    }
+    aims.push({ id: uid(), accountId: acc.id, subcategoryId: sub ? sub.id : null, targetAmount: amount, targetMonth: yearLabel + '-' + String(mi+1).padStart(2,'0'), history });
+  }
+  return aims;
+}
+
+let pendingAimsImport = null;
+function handleImportAimsFile(event){
+  const file = event.target.files[0];
+  event.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let aims;
+    try{ aims = parseAimsCSV(e.target.result); }
+    catch(err){
+      openModal('<p class="modal-title">Import failed</p><p class="modal-warn">The file couldn\u2019t be read.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+      return;
+    }
+    if(aims.length === 0){
+      openModal('<p class="modal-title">No aims found</p><p class="modal-warn">Either the file is empty or none of the accounts/subcategories it references match what\u2019s in the app right now.</p><div class="modal-actions"><button class="btn primary" onclick="closeModal()">Close</button></div>');
+      return;
+    }
+    pendingAimsImport = aims;
+    openModal(
+      '<p class="modal-title">Import aims</p>' +
+      '<p class="modal-warn">Found ' + aims.length + ' ' + (aims.length === 1 ? 'aim' : 'aims') + '. This replaces all ' + state.aims.length + ' aim' + (state.aims.length === 1 ? '' : 's') + ' currently in the app.</p>' +
+      '<div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="confirmImportAims()">Replace aims</button></div>'
+    );
+  };
+  reader.readAsText(file);
+}
+async function confirmImportAims(){
+  if(!pendingAimsImport) return;
+  state.aims = pendingAimsImport;
+  pendingAimsImport = null;
+  await saveData();
+  closeModal();
+  render();
+}
+
 (async function init(){
+  document.getElementById('undoFab').innerHTML = ICONS.undo;
   await loadData();
   render();
 })();
